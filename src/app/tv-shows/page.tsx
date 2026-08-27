@@ -39,53 +39,55 @@ const bottomNavItems = [
 
 function TrendingCard({ show }: { show: TrendingShow }) {
   return (
-    <div>
-      <div className="relative aspect-2/3 overflow-hidden rounded-md border border-border bg-surface">
-        {show.isNewEpisode && (
-          <span className="absolute left-2 top-2 z-10 rounded bg-primary px-2 py-0.5 font-ui text-[10px] font-bold uppercase tracking-wide text-text-primary">
-            New Episode
-          </span>
-        )}
-        <Image
-          src="/images/movie-poster.png"
-          alt=""
-          fill
-          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-          className="object-cover"
-        />
-      </div>
+    <div className="relative aspect-2/3 overflow-hidden rounded-md border border-border bg-surface">
+      {show.isNewEpisode && (
+        <span className="absolute left-2 top-2 z-10 rounded bg-primary px-2 py-0.5 font-ui text-[10px] font-bold uppercase tracking-wide text-text-primary">
+          New Episode
+        </span>
+      )}
+      <Image
+        src="/images/movie-poster.png"
+        alt=""
+        fill
+        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+        className="object-cover"
+      />
+      <div className="absolute inset-0 bg-linear-to-t from-black via-black/40 to-transparent" />
 
-      <p className="mt-2 line-clamp-1 font-ui text-sm font-semibold text-text-primary">
-        {show.title}
-      </p>
-      <p className="mt-0.5 font-ui text-xs font-semibold uppercase tracking-wide text-primary">
-        {show.network}
-      </p>
-      <p className="mt-0.5 font-body text-xs text-text-muted">{show.meta}</p>
+      <div className="absolute inset-x-0 bottom-0 p-3">
+        <p className="line-clamp-1 font-ui text-sm font-semibold text-text-primary">
+          {show.title}
+        </p>
+        <p className="mt-0.5 font-ui text-xs font-semibold uppercase tracking-wide text-primary">
+          {show.network}
+        </p>
+        <p className="mt-0.5 font-body text-xs text-text-secondary">{show.meta}</p>
+      </div>
     </div>
   );
 }
 
 function TopRatedCard({ show }: { show: TopRatedShow }) {
   return (
-    <div>
-      <div className="relative aspect-2/3 overflow-hidden rounded-md border border-border bg-surface">
-        <Image
-          src="/images/movie-poster.png"
-          alt=""
-          fill
-          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-          className="object-cover"
-        />
-      </div>
+    <div className="relative aspect-2/3 overflow-hidden rounded-md border border-border bg-surface">
+      <Image
+        src="/images/movie-poster.png"
+        alt=""
+        fill
+        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+        className="object-cover"
+      />
+      <div className="absolute inset-0 bg-linear-to-t from-black via-black/40 to-transparent" />
 
-      <p className="mt-2 line-clamp-1 font-ui text-sm font-semibold text-text-primary">
-        {show.title}
-      </p>
-      <p className="mt-0.5 flex items-center gap-1 font-body text-xs text-text-muted">
-        <Star size={12} className="fill-warning text-warning" />
-        {show.rating.toFixed(1)} · {show.seasons} Seasons
-      </p>
+      <div className="absolute inset-x-0 bottom-0 p-3">
+        <p className="line-clamp-1 font-ui text-sm font-semibold text-text-primary">
+          {show.title}
+        </p>
+        <p className="mt-0.5 flex items-center gap-1 font-body text-xs text-text-secondary">
+          <Star size={12} className="fill-warning text-warning" />
+          {show.rating.toFixed(1)} · {show.seasons} Seasons
+        </p>
+      </div>
     </div>
   );
 }
