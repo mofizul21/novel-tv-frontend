@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   Play,
@@ -45,10 +46,13 @@ function TrendingCard({ show }: { show: TrendingShow }) {
             New Episode
           </span>
         )}
-        {/* Placeholder artwork — swap for the real show poster */}
-        <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-surface-light to-surface">
-          <Tv size={32} className="text-border-light" />
-        </div>
+        <Image
+          src="/images/movie-poster.png"
+          alt=""
+          fill
+          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+          className="object-cover"
+        />
       </div>
 
       <p className="mt-2 line-clamp-1 font-ui text-sm font-semibold text-text-primary">
@@ -66,10 +70,13 @@ function TopRatedCard({ show }: { show: TopRatedShow }) {
   return (
     <div>
       <div className="relative aspect-2/3 overflow-hidden rounded-md border border-border bg-surface">
-        {/* Placeholder artwork — swap for the real show poster */}
-        <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-surface-light to-surface">
-          <Tv size={32} className="text-border-light" />
-        </div>
+        <Image
+          src="/images/movie-poster.png"
+          alt=""
+          fill
+          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+          className="object-cover"
+        />
       </div>
 
       <p className="mt-2 line-clamp-1 font-ui text-sm font-semibold text-text-primary">
@@ -86,8 +93,14 @@ function TopRatedCard({ show }: { show: TopRatedShow }) {
 function NewEpisodeRow({ item }: { item: NewEpisodeItem }) {
   return (
     <div className="flex items-center gap-3">
-      <div className="relative flex h-16 w-24 flex-none items-center justify-center overflow-hidden rounded-md bg-linear-to-br from-surface-light to-surface sm:w-28">
-        <Tv size={20} className="text-border-light" />
+      <div className="relative h-16 w-24 flex-none overflow-hidden rounded-md bg-surface sm:w-28">
+        <Image
+          src="/images/movie-preview.png"
+          alt=""
+          fill
+          sizes="112px"
+          className="object-cover"
+        />
         {item.hasPlay && (
           <span className="absolute inset-0 flex items-center justify-center bg-black/30">
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-black/50">
@@ -127,15 +140,17 @@ export default function TvShowsPage() {
       <div className="pb-16 lg:pb-0">
         {/* ===================== Hero Section: Start ===================== */}
         <section className="relative isolate min-h-115 overflow-hidden bg-background sm:min-h-125">
-          {/* Placeholder backdrop — swap for the real TV Shows key-art image */}
           <div className="absolute inset-0 -z-10">
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_75%_20%,rgba(0,116,217,0.35),transparent_60%)]" />
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_90%_60%,rgba(0,175,255,0.18),transparent_65%)]" />
-            <div className="absolute right-[8%] top-1/2 -translate-y-1/2 opacity-20">
-              <Tv size={140} className="text-accent" />
-            </div>
-            <div className="absolute inset-0 bg-linear-to-r from-black via-black/70 to-transparent" />
-            <div className="absolute inset-0 bg-linear-to-t from-black via-transparent to-black/30" />
+            <Image
+              src="/images/home-hero.png"
+              alt=""
+              fill
+              priority
+              sizes="100vw"
+              className="object-cover object-right"
+            />
+            <div className="absolute inset-0 bg-linear-to-r from-black via-black/10 to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-t from-black via-transparent to-black/10" />
           </div>
 
           <div className="mx-auto max-w-360 px-4 pb-8 pt-10 sm:px-6 lg:px-10 lg:pt-14">
@@ -252,7 +267,7 @@ export default function TvShowsPage() {
             </a>
           </div>
 
-          <div className="grid grid-cols-1 gap-x-8 gap-y-5 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
             {newEpisodes.map((item) => (
               <NewEpisodeRow key={item.id} item={item} />
             ))}
