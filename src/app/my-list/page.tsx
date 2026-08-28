@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   X,
@@ -25,36 +26,38 @@ const bottomNavItems = [
 ];
 
 function SavedCard({ item }: { item: SavedItem }) {
-  const Icon = item.type === "Movie" ? Clapperboard : Tv;
-
   return (
-    <div>
-      <div className="group relative aspect-2/3 overflow-hidden rounded-md border border-border bg-surface">
-        <span className="absolute left-2 top-2 z-10 rounded bg-black/60 px-2 py-0.5 font-ui text-[10px] font-bold uppercase tracking-wide text-text-secondary backdrop-blur-sm">
-          {item.type}
-        </span>
-        <button
-          aria-label={`Remove ${item.title} from My List`}
-          className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-text-primary opacity-0 backdrop-blur-sm transition-opacity duration-150 hover:bg-error group-hover:opacity-100"
-        >
-          <X size={14} />
-        </button>
-        {/* Placeholder artwork — swap for the real poster image */}
-        <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-surface-light to-surface">
-          <Icon size={32} className="text-border-light" />
-        </div>
-      </div>
+    <div className="group relative aspect-2/3 overflow-hidden rounded-md border border-border bg-surface">
+      <span className="absolute left-2 top-2 z-10 rounded bg-black/60 px-2 py-0.5 font-ui text-[10px] font-bold uppercase tracking-wide text-text-secondary backdrop-blur-sm">
+        {item.type}
+      </span>
+      <button
+        aria-label={`Remove ${item.title} from My List`}
+        className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-text-primary opacity-0 backdrop-blur-sm transition-opacity duration-150 hover:bg-error group-hover:opacity-100"
+      >
+        <X size={14} />
+      </button>
+      <Image
+        src="/images/movie-poster.png"
+        alt=""
+        fill
+        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+        className="object-cover"
+      />
+      <div className="absolute inset-0 bg-linear-to-t from-black via-black/40 to-transparent" />
 
-      <p className="mt-2 line-clamp-1 font-ui text-sm font-semibold text-text-primary">
-        {item.title}
-      </p>
-      <div className="mt-1 flex items-center justify-between gap-2">
-        <span className="font-body text-xs text-text-muted">
-          {item.year} · {item.meta}
-        </span>
-        <span className="rounded border border-border-light px-1.5 py-0.5 font-ui text-[10px] font-semibold text-text-secondary">
-          {item.rating}
-        </span>
+      <div className="absolute inset-x-0 bottom-0 p-3">
+        <p className="line-clamp-1 font-ui text-sm font-semibold text-text-primary">
+          {item.title}
+        </p>
+        <div className="mt-1 flex items-center justify-between gap-2">
+          <span className="font-body text-xs text-text-secondary">
+            {item.year} · {item.meta}
+          </span>
+          <span className="rounded border border-border-light bg-black/40 px-1.5 py-0.5 font-ui text-[10px] font-semibold text-text-secondary backdrop-blur-sm">
+            {item.rating}
+          </span>
+        </div>
       </div>
     </div>
   );

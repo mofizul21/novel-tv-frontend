@@ -250,24 +250,24 @@ export default function LiveTvPage() {
         {/* =========== Currently Playing / On Next Section: Start =========== */}
         <section className="mx-auto max-w-360 px-4 py-8 sm:px-6 lg:px-10">
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <div className="overflow-hidden rounded-lg border border-border bg-surface lg:col-span-2">
-              <div className="relative aspect-video">
-                <div className="absolute left-4 top-4 z-10 font-ui text-xs font-bold uppercase tracking-wide text-primary">
-                  Currently Playing
-                </div>
-                <div className="absolute left-4 top-10 z-10 rounded bg-error px-2 py-0.5 font-ui text-[10px] font-bold uppercase tracking-wide text-text-primary">
-                  Live
-                </div>
-                <Image
-                  src="/images/currently-playing.png"
-                  alt=""
-                  fill
-                  sizes="(max-width: 1024px) 100vw, 66vw"
-                  className="object-cover"
-                />
+            <div className="relative min-h-96 overflow-hidden rounded-lg border border-border bg-surface lg:col-span-2 lg:min-h-100">
+              <Image
+                src="/images/currently-playing.png"
+                alt=""
+                fill
+                sizes="(max-width: 1024px) 100vw, 66vw"
+                className="object-cover"
+              />
+              <div className="absolute inset-0 bg-linear-to-t from-black via-black/60 to-black/10" />
+
+              <div className="absolute left-4 top-4 z-10 font-ui text-xs font-bold uppercase tracking-wide text-primary">
+                Currently Playing
+              </div>
+              <div className="absolute left-4 top-10 z-10 rounded bg-error px-2 py-0.5 font-ui text-[10px] font-bold uppercase tracking-wide text-text-primary">
+                Live
               </div>
 
-              <div className="p-4 sm:p-6">
+              <div className="absolute inset-x-0 bottom-0 p-4 sm:p-6">
                 <h3 className="font-heading text-3xl uppercase text-text-primary">
                   {currentlyPlaying.title}
                 </h3>
@@ -302,8 +302,14 @@ export default function LiveTvPage() {
               <div className="mt-3 space-y-4">
                 {onNextItems.map((item) => (
                   <div key={item.time} className="flex items-center gap-3">
-                    <div className="flex h-14 w-14 flex-none items-center justify-center rounded-md bg-linear-to-br from-surface-light to-surface">
-                      <Tv size={18} className="text-border-light" />
+                    <div className="relative h-14 w-14 flex-none overflow-hidden rounded-md bg-surface">
+                      <Image
+                        src="/images/movie-preview.png"
+                        alt=""
+                        fill
+                        sizes="56px"
+                        className="object-cover"
+                      />
                     </div>
                     <div>
                       <p className="font-ui text-xs font-semibold text-primary">

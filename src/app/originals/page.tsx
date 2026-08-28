@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   Play,
   ChevronRight,
   Crown,
   Clapperboard,
-  Film,
   Tv,
   Home as HomeIcon,
   Radio,
@@ -30,31 +30,33 @@ const bottomNavItems = [
 ];
 
 function OriginalCard({ item }: { item: OriginalItem }) {
-  const Icon = item.type === "Film" ? Film : Clapperboard;
-
   return (
-    <div>
-      <div className="relative aspect-2/3 overflow-hidden rounded-md border border-border bg-surface">
-        <span
-          className={`absolute left-2 top-2 z-10 flex items-center gap-1 rounded px-2 py-0.5 font-ui text-[10px] font-bold uppercase tracking-wide text-text-primary ${
-            item.tag === "Exclusive" ? "bg-primary" : "bg-surface-hover"
-          }`}
-        >
-          {item.tag === "Exclusive" && <Crown size={10} />}
-          {item.tag}
-        </span>
-        {/* Placeholder artwork — swap for the real poster image */}
-        <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-surface-light to-surface">
-          <Icon size={32} className="text-border-light" />
-        </div>
-      </div>
+    <div className="relative aspect-2/3 overflow-hidden rounded-md border border-border bg-surface">
+      <span
+        className={`absolute left-2 top-2 z-10 flex items-center gap-1 rounded px-2 py-0.5 font-ui text-[10px] font-bold uppercase tracking-wide text-text-primary ${
+          item.tag === "Exclusive" ? "bg-primary" : "bg-surface-hover"
+        }`}
+      >
+        {item.tag === "Exclusive" && <Crown size={10} />}
+        {item.tag}
+      </span>
+      <Image
+        src="/images/movie-poster.png"
+        alt=""
+        fill
+        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+        className="object-cover"
+      />
+      <div className="absolute inset-0 bg-linear-to-t from-black via-black/40 to-transparent" />
 
-      <p className="mt-2 line-clamp-1 font-ui text-sm font-semibold text-text-primary">
-        {item.title}
-      </p>
-      <p className="mt-0.5 font-body text-xs text-text-muted">
-        {item.type} · {item.meta}
-      </p>
+      <div className="absolute inset-x-0 bottom-0 p-3">
+        <p className="line-clamp-1 font-ui text-sm font-semibold text-text-primary">
+          {item.title}
+        </p>
+        <p className="mt-0.5 font-body text-xs text-text-secondary">
+          {item.type} · {item.meta}
+        </p>
+      </div>
     </div>
   );
 }
@@ -68,15 +70,17 @@ export default function OriginalsPage() {
       <div className="pb-16 lg:pb-0">
         {/* ===================== Hero Section: Start ===================== */}
         <section className="relative isolate min-h-115 overflow-hidden bg-background sm:min-h-125">
-          {/* Placeholder backdrop — swap for the real Originals key-art image */}
           <div className="absolute inset-0 -z-10">
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_75%_20%,rgba(0,116,217,0.35),transparent_60%)]" />
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_90%_60%,rgba(0,175,255,0.18),transparent_65%)]" />
-            <div className="absolute right-[8%] top-1/2 -translate-y-1/2 opacity-20">
-              <Crown size={140} className="text-accent" />
-            </div>
-            <div className="absolute inset-0 bg-linear-to-r from-black via-black/70 to-transparent" />
-            <div className="absolute inset-0 bg-linear-to-t from-black via-transparent to-black/30" />
+            <Image
+              src="/images/home-hero.png"
+              alt=""
+              fill
+              priority
+              sizes="100vw"
+              className="object-cover object-right"
+            />
+            <div className="absolute inset-0 bg-linear-to-r from-black via-black/10 to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-t from-black via-transparent to-black/10" />
           </div>
 
           <div className="mx-auto max-w-360 px-4 pb-8 pt-10 sm:px-6 lg:px-10 lg:pt-14">
