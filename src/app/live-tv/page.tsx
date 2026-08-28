@@ -302,12 +302,12 @@ export default function LiveTvPage() {
               <div className="mt-3 space-y-4">
                 {onNextItems.map((item) => (
                   <div key={item.time} className="flex items-center gap-3">
-                    <div className="relative h-14 w-14 flex-none overflow-hidden rounded-md bg-surface">
+                    <div className="relative aspect-video w-24 flex-none overflow-hidden rounded-md bg-surface">
                       <Image
                         src="/images/movie-preview.png"
                         alt=""
                         fill
-                        sizes="56px"
+                        sizes="96px"
                         className="object-cover"
                       />
                     </div>
