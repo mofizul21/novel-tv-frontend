@@ -4,7 +4,7 @@ import type { NextRequest } from "next/server";
 // Add or remove page names here to control which pages are publicly
 // reachable right now. Anything not listed redirects to "/".
 // "home" is a special case — it maps to the "/" route.
-const allowedPages = ['home', 'movies', 'tv-shows'];
+const allowedPages = ['home', 'movies', 'tv-shows', 'live-tv', 'originals', 'my-list'];
 
 const pagePaths: Record<string, string> = {
   home: "/",

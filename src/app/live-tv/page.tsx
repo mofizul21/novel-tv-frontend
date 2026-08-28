@@ -62,15 +62,17 @@ export default function LiveTvPage() {
       <div className="pb-16 lg:pb-0">
         {/* ===================== Hero Section: Start ===================== */}
         <section className="relative isolate min-h-115 overflow-hidden bg-background sm:min-h-125">
-          {/* Placeholder backdrop — swap for the real Live TV key-art image */}
           <div className="absolute inset-0 -z-10">
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_75%_20%,rgba(0,116,217,0.35),transparent_60%)]" />
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_90%_60%,rgba(0,175,255,0.18),transparent_65%)]" />
-            <div className="absolute right-[8%] top-1/2 -translate-y-1/2 opacity-20">
-              <Radio size={140} className="text-accent" />
-            </div>
-            <div className="absolute inset-0 bg-linear-to-r from-black via-black/70 to-transparent" />
-            <div className="absolute inset-0 bg-linear-to-t from-black via-transparent to-black/30" />
+            <Image
+              src="/images/live-tv-hero.png"
+              alt=""
+              fill
+              priority
+              sizes="100vw"
+              className="object-cover object-right"
+            />
+            <div className="absolute inset-0 bg-linear-to-r from-black via-black/10 to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-t from-black via-transparent to-black/10" />
           </div>
 
           <div className="mx-auto max-w-360 px-4 pb-8 pt-10 sm:px-6 lg:px-10 lg:pt-14">
@@ -256,10 +258,13 @@ export default function LiveTvPage() {
                 <div className="absolute left-4 top-10 z-10 rounded bg-error px-2 py-0.5 font-ui text-[10px] font-bold uppercase tracking-wide text-text-primary">
                   Live
                 </div>
-                {/* Placeholder artwork — swap for the real broadcast still */}
-                <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-surface-light to-surface">
-                  <Trophy size={48} className="text-border-light" />
-                </div>
+                <Image
+                  src="/images/currently-playing.png"
+                  alt=""
+                  fill
+                  sizes="(max-width: 1024px) 100vw, 66vw"
+                  className="object-cover"
+                />
               </div>
 
               <div className="p-4 sm:p-6">
@@ -321,13 +326,16 @@ export default function LiveTvPage() {
 
         {/* ================= Everywhere Promo Section: Start ================= */}
         <section className="mx-auto max-w-360 px-4 py-8 sm:px-6 lg:px-10">
-          <div className="flex flex-col items-center gap-6 rounded-xl border border-primary bg-surface-blue px-6 py-8 sm:px-10 sm:py-10 lg:flex-row">
-            {/* Placeholder artwork — swap for the real multi-device mockup */}
-            <div className="flex h-40 w-full flex-none items-center justify-center rounded-lg bg-linear-to-br from-surface-light to-surface lg:w-72">
-              <Smartphone size={40} className="text-border-light" />
-            </div>
+          <div className="relative overflow-hidden rounded-xl border border-primary bg-surface-blue">
+            <Image
+              src="/images/watch-drip-tv-everywhere.png"
+              alt=""
+              fill
+              sizes="(max-width: 1440px) 100vw, 1440px"
+              className="object-cover"
+            />
 
-            <div className="flex-1 text-center lg:text-left">
+            <div className="relative flex flex-col items-end px-6 py-10 text-right sm:px-10 lg:py-14">
               <h2 className="font-heading text-3xl uppercase leading-tight text-text-primary sm:text-4xl">
                 Watch <span className="text-accent">Drip TV</span> Everywhere
               </h2>
@@ -335,7 +343,7 @@ export default function LiveTvPage() {
                 Stream live TV on all your devices.
               </p>
 
-              <div className="mt-5 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 lg:justify-start">
+              <div className="mt-5 flex flex-wrap items-center justify-end gap-x-6 gap-y-3">
                 {streamingDevices.map((label) => {
                   const Icon =
                     label === "Smart TV" ? Tv : label === "Phone" ? Smartphone : label === "Tablet" ? Tablet : Laptop;
