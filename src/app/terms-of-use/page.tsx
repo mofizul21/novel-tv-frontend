@@ -1,11 +1,11 @@
 const sections = [
   {
     title: "1. Acceptance of Terms",
-    body: "By creating an account or using Drip TV, you agree to be bound by these Terms of Use. If you do not agree, please do not use the service.",
+    body: "By creating an account or using Novel TV, you agree to be bound by these Terms of Use. If you do not agree, please do not use the service.",
   },
   {
     title: "2. Your Account",
-    body: "You must be at least 18 years old, or have parental consent, to create a Drip TV account. You are responsible for keeping your login credentials secure and for all activity under your account.",
+    body: "You must be at least 18 years old, or have parental consent, to create a Novel TV account. You are responsible for keeping your login credentials secure and for all activity under your account.",
   },
   {
     title: "3. Subscriptions & Billing",
@@ -13,7 +13,7 @@ const sections = [
   },
   {
     title: "4. Use of the Service",
-    body: "Drip TV grants you a limited, non-exclusive, non-transferable license to stream content for personal, non-commercial use. Content may not be downloaded, redistributed, publicly performed, or used to train machine learning models without our written permission.",
+    body: "Novel TV grants you a limited, non-exclusive, non-transferable license to stream content for personal, non-commercial use. Content may not be downloaded, redistributed, publicly performed, or used to train machine learning models without our written permission.",
   },
   {
     title: "5. Content & Availability",
@@ -29,11 +29,11 @@ const sections = [
   },
   {
     title: "8. Limitation of Liability",
-    body: "Drip TV is provided “as is.” To the fullest extent permitted by law, we are not liable for indirect, incidental, or consequential damages arising from your use of the service.",
+    body: "Novel TV is provided “as is.” To the fullest extent permitted by law, we are not liable for indirect, incidental, or consequential damages arising from your use of the service.",
   },
   {
     title: "9. Changes to These Terms",
-    body: "We may update these Terms of Use from time to time. Continued use of Drip TV after changes take effect constitutes acceptance of the revised terms.",
+    body: "We may update these Terms of Use from time to time. Continued use of Novel TV after changes take effect constitutes acceptance of the revised terms.",
   },
   {
     title: "10. Contact Us",
@@ -52,7 +52,7 @@ export default function TermsOfUsePage() {
       </p>
 
       <p className="mt-6 font-body text-text-secondary">
-        These Terms of Use govern your access to and use of Drip TV. This is
+        These Terms of Use govern your access to and use of Novel TV. This is
         placeholder text for development purposes — replace with reviewed
         legal copy before launch.
       </p>

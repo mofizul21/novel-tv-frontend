@@ -334,7 +334,7 @@ export default function LiveTvPage() {
         <section className="mx-auto max-w-360 px-4 py-8 sm:px-6 lg:px-10">
           <div className="relative overflow-hidden rounded-xl border border-primary bg-surface-blue">
             <Image
-              src="/images/watch-drip-tv-everywhere.png"
+              src="/images/watch-novel-tv-everywhere.png"
               alt=""
               fill
               sizes="(max-width: 1440px) 100vw, 1440px"
@@ -343,7 +343,7 @@ export default function LiveTvPage() {
 
             <div className="relative flex flex-col items-end px-6 py-10 text-right sm:px-10 lg:py-14">
               <h2 className="font-heading text-3xl uppercase leading-tight text-text-primary sm:text-4xl">
-                Watch <span className="text-accent">Drip TV</span> Everywhere
+                Watch <span className="text-accent">Novel TV</span> Everywhere
               </h2>
               <p className="mt-2 font-body text-text-secondary">
                 Stream live TV on all your devices.

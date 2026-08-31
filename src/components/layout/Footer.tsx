@@ -76,10 +76,10 @@ export function Footer() {
           <div className="col-span-2 sm:col-span-1 lg:col-span-1">
             <Link href="/" className="inline-flex items-center">
               <Image
-                src="/images/drip-logo.png"
-                alt="Drip TV"
-                width={245}
-                height={110}
+                src="/images/novel-tv-logo.png"
+                alt="Novel TV"
+                width={500}
+                height={228}
                 className="h-14 w-auto sm:h-16"
               />
             </Link>
@@ -95,7 +95,7 @@ export function Footer() {
 
           <div className="col-span-2 sm:col-span-4 lg:col-span-1">
             <p className="font-ui text-sm font-bold uppercase tracking-wide text-text-primary">
-              Follow Drip TV
+              Follow Novel TV
             </p>
             <div className="mt-3 flex items-center gap-3">
               {Object.entries(socialIcons).map(([label, icon]) => (
@@ -113,7 +113,7 @@ export function Footer() {
         </div>
 
         <p className="mt-10 text-center font-body text-xs text-text-muted">
-          © {new Date().getFullYear()} Drip TV. All Rights Reserved.
+          © {new Date().getFullYear()} Novel TV. All Rights Reserved.
         </p>
       </div>
     </footer>

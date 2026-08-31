@@ -6,7 +6,7 @@ const contactMethods = [
   {
     icon: Mail,
     title: "Email Support",
-    detail: "support@driptv.com",
+    detail: "support@noveltv.com",
     subtext: "We usually reply within 24 hours.",
   },
   {

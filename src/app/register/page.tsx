@@ -59,10 +59,10 @@ export default function RegisterPage() {
       <div className="w-full max-w-md rounded-xl border border-border bg-surface p-8 shadow-md">
         <Link href="/" className="mx-auto flex w-fit items-center">
           <Image
-            src="/images/drip-logo.png"
-            alt="Drip TV"
-            width={245}
-            height={110}
+            src="/images/novel-tv-logo.png"
+            alt="Novel TV"
+            width={500}
+            height={228}
             className="h-10 w-auto"
           />
         </Link>
@@ -71,7 +71,7 @@ export default function RegisterPage() {
           Create Account
         </h1>
         <p className="mt-1 text-center font-body text-sm text-text-secondary">
-          Join Drip TV and start streaming in minutes.
+          Join Novel TV and start streaming in minutes.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">

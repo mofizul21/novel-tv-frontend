@@ -29,7 +29,7 @@ const fontAccent = Permanent_Marker({
 });
 
 export const metadata: Metadata = {
-  title: "Drip TV — Stream Different. No Limits.",
+  title: "Novel TV — Stream Different. No Limits.",
   description:
     "Movies. TV shows. Live TV. Originals. No limits. Just nonstop entertainment.",
   icons: {

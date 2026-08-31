@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import {
   originalsFilters,
-  dripOriginals,
+  novelOriginals,
   comingSoonOriginals,
   type OriginalItem,
 } from "@/lib/demo-data";
@@ -97,7 +97,7 @@ export default function OriginalsPage() {
               </h1>
 
               <p className="mt-5 max-w-md font-body text-base text-text-secondary sm:text-lg">
-                Only on Drip TV. Exclusive series and films you won&apos;t
+                Only on Novel TV. Exclusive series and films you won&apos;t
                 find anywhere else.
               </p>
 
@@ -134,11 +134,11 @@ export default function OriginalsPage() {
         </section>
         {/* ====================== Hero Section: End ====================== */}
 
-        {/* =================== Drip TV Originals Section: Start =================== */}
+        {/* =================== Novel TV Originals Section: Start =================== */}
         <section className="mx-auto max-w-360 px-4 py-8 sm:px-6 lg:px-10">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-ui text-xl font-semibold text-text-primary sm:text-2xl">
-              Drip TV Originals
+              Novel TV Originals
             </h2>
             <a
               href="#"
@@ -150,12 +150,12 @@ export default function OriginalsPage() {
           </div>
 
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-            {dripOriginals.map((item) => (
+            {novelOriginals.map((item) => (
               <OriginalCard key={item.id} item={item} />
             ))}
           </div>
         </section>
-        {/* ==================== Drip TV Originals Section: End ==================== */}
+        {/* ==================== Novel TV Originals Section: End ==================== */}
 
         {/* ====================== Coming Soon Section: Start ====================== */}
         <section className="mx-auto max-w-360 px-4 py-8 sm:px-6 lg:px-10">

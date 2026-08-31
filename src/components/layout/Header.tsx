@@ -43,10 +43,10 @@ export function Header() {
       <div className="mx-auto flex max-w-360 items-center gap-6 px-4 py-3 sm:px-6 lg:px-10">
         <Link href="/" className="inline-flex items-center">
           <Image
-            src="/images/drip-logo.png"
-            alt="Drip TV"
-            width={245}
-            height={110}
+            src="/images/novel-tv-logo.png"
+            alt="Novel TV"
+            width={500}
+            height={228}
             priority
             className="h-9 w-auto sm:h-10"
           />

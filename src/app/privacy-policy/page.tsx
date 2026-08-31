@@ -9,11 +9,11 @@ const sections = [
   },
   {
     title: "3. Cookies & Tracking",
-    body: "Drip TV uses cookies and similar technologies to keep you signed in, remember preferences, and understand how the service is used. You can control cookies through your browser settings.",
+    body: "Novel TV uses cookies and similar technologies to keep you signed in, remember preferences, and understand how the service is used. You can control cookies through your browser settings.",
   },
   {
     title: "4. How We Share Information",
-    body: "We share information with service providers who help us operate Drip TV (payment processing, video delivery, analytics) under confidentiality obligations. We do not sell your personal information.",
+    body: "We share information with service providers who help us operate Novel TV (payment processing, video delivery, analytics) under confidentiality obligations. We do not sell your personal information.",
   },
   {
     title: "5. Data Security",
@@ -25,7 +25,7 @@ const sections = [
   },
   {
     title: "7. Children's Privacy",
-    body: "Drip TV is not directed at children under 13, and we do not knowingly collect personal information from them.",
+    body: "Novel TV is not directed at children under 13, and we do not knowingly collect personal information from them.",
   },
   {
     title: "8. Changes to This Policy",
@@ -48,7 +48,7 @@ export default function PrivacyPolicyPage() {
       </p>
 
       <p className="mt-6 font-body text-text-secondary">
-        This Privacy Policy explains how Drip TV collects, uses, and protects
+        This Privacy Policy explains how Novel TV collects, uses, and protects
         your information. This is placeholder text for development purposes
         — replace with reviewed legal copy before launch.
       </p>

@@ -307,7 +307,7 @@ export default function HomePage() {
           <div className="relative flex flex-col items-start justify-between gap-8 px-6 py-8 sm:px-10 sm:py-10 lg:flex-row lg:items-center">
             <div className="max-w-md">
               <h2 className="font-heading text-4xl uppercase leading-tight text-text-primary sm:text-5xl">
-                The <span className="text-accent">Drip TV</span> App
+                The <span className="text-accent">Novel TV</span> App
               </h2>
               <p className="mt-2 font-body text-text-secondary">
                 Your ultimate streaming experience.

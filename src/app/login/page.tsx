@@ -59,10 +59,10 @@ export default function LoginPage() {
       <div className="w-full max-w-md rounded-xl border border-border bg-surface p-8 shadow-md">
         <Link href="/" className="mx-auto flex w-fit items-center">
           <Image
-            src="/images/drip-logo.png"
-            alt="Drip TV"
-            width={245}
-            height={110}
+            src="/images/novel-tv-logo.png"
+            alt="Novel TV"
+            width={500}
+            height={228}
             className="h-10 w-auto"
           />
         </Link>
@@ -154,7 +154,7 @@ export default function LoginPage() {
         </div>
 
         <p className="mt-6 text-center font-body text-sm text-text-secondary">
-          New to Drip TV?{" "}
+          New to Novel TV?{" "}
           <Link href="/register" className="font-semibold text-primary hover:text-accent">
             Create Account
           </Link>

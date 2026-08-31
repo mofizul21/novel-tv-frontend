@@ -58,14 +58,14 @@ export type ChannelRow = {
 
 export const liveChannels: ChannelRow[] = [
   {
-    id: "drip-tv",
-    name: "DRIP TV",
-    logo: "/images/drip-logo.png",
+    id: "novel-tv",
+    name: "NOVEL TV",
+    logo: "/images/novel-tv-logo.png",
     slots: [
-      { title: "The Drip Network", live: true },
-      { title: "Drip Sports", subtitle: "Live Games & Highlights", live: true },
-      { title: "Drip News", subtitle: "News That Hits Different", live: true },
-      { title: "Drip Comedy", subtitle: "Laugh On Demand", live: true },
+      { title: "The Novel Network", live: true },
+      { title: "Novel Sports", subtitle: "Live Games & Highlights", live: true },
+      { title: "Novel News", subtitle: "News That Hits Different", live: true },
+      { title: "Novel Comedy", subtitle: "Laugh On Demand", live: true },
     ],
   },
   {
@@ -154,15 +154,15 @@ export type GuideChannel = {
 
 export const guideChannels: GuideChannel[] = [
   {
-    id: "drip-tv",
-    name: "DRIP TV",
+    id: "novel-tv",
+    name: "NOVEL TV",
     number: "101",
-    logo: "/images/drip-logo.png",
+    logo: "/images/novel-tv-logo.png",
     slots: [
-      { title: "The Drip Network", subtitle: "7:00 PM - 8:00 PM", span: 2 },
-      { title: "Drip Sports", subtitle: "Live Games & Highlights", span: 1 },
-      { title: "Drip News", subtitle: "News That Hits Different", span: 1 },
-      { title: "Drip Comedy", subtitle: "Laugh On Demand", span: 1 },
+      { title: "The Novel Network", subtitle: "7:00 PM - 8:00 PM", span: 2 },
+      { title: "Novel Sports", subtitle: "Live Games & Highlights", span: 1 },
+      { title: "Novel News", subtitle: "News That Hits Different", span: 1 },
+      { title: "Novel Comedy", subtitle: "Laugh On Demand", span: 1 },
     ],
   },
   {
@@ -377,7 +377,7 @@ export type OriginalItem = {
   tag: "Exclusive" | "Coming Soon";
 };
 
-export const dripOriginals: OriginalItem[] = [
+export const novelOriginals: OriginalItem[] = [
   { id: "all-hustle", title: "All Hustle", type: "Series", meta: "2 Seasons", tag: "Exclusive" },
   { id: "ruthless", title: "Ruthless", type: "Series", meta: "3 Seasons", tag: "Exclusive" },
   { id: "sauce-city", title: "Sauce City", type: "Series", meta: "1 Season", tag: "Exclusive" },
@@ -405,7 +405,7 @@ export const helpCategories = [
   {
     id: "devices-apps",
     title: "Devices & Apps",
-    description: "Set up Drip TV on your phone, smart TV, or streaming device.",
+    description: "Set up Novel TV on your phone, smart TV, or streaming device.",
   },
   {
     id: "plans",
@@ -416,7 +416,7 @@ export const helpCategories = [
 
 export const faqItems = [
   {
-    question: "How do I start watching Drip TV?",
+    question: "How do I start watching Novel TV?",
     answer:
       "Create an account, choose a subscription plan, and start streaming instantly on the web, or download our iOS/Android app.",
   },
@@ -431,7 +431,7 @@ export const faqItems = [
       "Go to Dashboard → Subscription → Cancel Plan. You'll keep access until the end of your current billing period.",
   },
   {
-    question: "Does Drip TV support offline downloads?",
+    question: "Does Novel TV support offline downloads?",
     answer:
       "Select movies and shows can be downloaded for offline viewing from within the mobile app.",
   },
