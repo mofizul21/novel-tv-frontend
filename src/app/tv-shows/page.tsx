@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -8,22 +8,16 @@ import {
   Play,
   ChevronRight,
   TrendingUp,
-  Star,
   Tv,
   Clapperboard,
   Home as HomeIcon,
   Radio,
   Bookmark,
+  Loader2,
 } from "lucide-react";
-import {
-  tvShowFilters,
-  trendingShows,
-  topRatedShows,
-  newEpisodes,
-  type TrendingShow,
-  type TopRatedShow,
-  type NewEpisodeItem,
-} from "@/lib/demo-data";
+import { tvShowFilters } from "@/lib/demo-data";
+import { fetchSeriesList, fetchSeriesBySlug, type Series, type Episode, type Season } from "@/lib/series";
+import { PosterCard } from "@/components/PosterCard";
 
 const filterIcons: Record<string, React.ComponentType<{ size?: number }>> = {
   Popular: TrendingUp,
@@ -37,105 +31,109 @@ const bottomNavItems = [
   { label: "My List", href: "/my-list", icon: Bookmark },
 ];
 
-function TrendingCard({ show }: { show: TrendingShow }) {
-  return (
-    <div className="relative aspect-2/3 overflow-hidden rounded-md border border-border bg-surface">
-      {show.isNewEpisode && (
-        <span className="absolute left-2 top-2 z-10 rounded bg-primary px-2 py-0.5 font-ui text-[10px] font-bold uppercase tracking-wide text-text-primary">
-          New Episode
-        </span>
-      )}
-      <Image
-        src="/images/movie-poster.png"
-        alt=""
-        fill
-        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-        className="object-cover"
-      />
-      <div className="absolute inset-0 bg-linear-to-t from-black via-black/40 to-transparent" />
+type LatestEpisode = { series: Series; season: Season; episode: Episode };
 
-      <div className="absolute inset-x-0 bottom-0 p-3">
-        <p className="line-clamp-1 font-ui text-sm font-semibold text-text-primary">
-          {show.title}
-        </p>
-        <p className="mt-0.5 font-ui text-xs font-semibold uppercase tracking-wide text-primary">
-          {show.network}
-        </p>
-        <p className="mt-0.5 font-body text-xs text-text-secondary">{show.meta}</p>
-      </div>
-    </div>
-  );
+function seriesSubtitle(series: Series): string {
+  const seasonCount = series.seasons?.length;
+  return [series.first_air_year, seasonCount ? `${seasonCount} Season${seasonCount === 1 ? "" : "s"}` : null]
+    .filter(Boolean)
+    .join(" · ");
 }
 
-function TopRatedCard({ show }: { show: TopRatedShow }) {
+function NewEpisodeRow({ item }: { item: LatestEpisode }) {
   return (
-    <div className="relative aspect-2/3 overflow-hidden rounded-md border border-border bg-surface">
-      <Image
-        src="/images/movie-poster.png"
-        alt=""
-        fill
-        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-        className="object-cover"
-      />
-      <div className="absolute inset-0 bg-linear-to-t from-black via-black/40 to-transparent" />
-
-      <div className="absolute inset-x-0 bottom-0 p-3">
-        <p className="line-clamp-1 font-ui text-sm font-semibold text-text-primary">
-          {show.title}
-        </p>
-        <p className="mt-0.5 flex items-center gap-1 font-body text-xs text-text-secondary">
-          <Star size={12} className="fill-warning text-warning" />
-          {show.rating.toFixed(1)} · {show.seasons} Seasons
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function NewEpisodeRow({ item }: { item: NewEpisodeItem }) {
-  return (
-    <div className="flex items-center gap-3">
+    <Link
+      href={`/series/${item.series.slug}/season/${item.season.number}/episode/${item.episode.number}`}
+      className="flex items-center gap-3"
+    >
       <div className="relative h-16 w-24 flex-none overflow-hidden rounded-md bg-surface sm:w-28">
         <Image
-          src="/images/movie-preview.png"
+          src={item.episode.still_url ?? "/images/movie-preview.png"}
           alt=""
           fill
           sizes="112px"
           className="object-cover"
         />
-        {item.hasPlay && (
-          <span className="absolute inset-0 flex items-center justify-center bg-black/30">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-black/50">
-              <Play size={14} fill="currentColor" className="text-text-primary" />
-            </span>
+        <span className="absolute inset-0 flex items-center justify-center bg-black/30">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-black/50">
+            <Play size={14} fill="currentColor" className="text-text-primary" />
           </span>
-        )}
+        </span>
       </div>
 
       <div className="min-w-0">
         <div className="flex items-center gap-2">
-          <p className="truncate font-ui text-sm font-semibold text-primary">
-            {item.title}
-          </p>
-          <span className="flex-none rounded bg-primary px-1.5 py-0.5 font-ui text-[10px] font-bold uppercase tracking-wide text-text-primary">
-            New
-          </span>
+          <p className="truncate font-ui text-sm font-semibold text-primary">{item.series.title}</p>
+          {item.episode.mux_playback_id && (
+            <span className="flex-none rounded bg-primary px-1.5 py-0.5 font-ui text-[10px] font-bold uppercase tracking-wide text-text-primary">
+              Preview
+            </span>
+          )}
         </div>
         <p className="mt-0.5 truncate font-body text-xs text-text-secondary">
-          {item.season}
-          {item.episodeTitle && <> · &ldquo;{item.episodeTitle}&rdquo;</>}
+          S{item.season.number} E{item.episode.number} · &ldquo;{item.episode.title}&rdquo;
         </p>
-        <p className="mt-0.5 font-body text-xs text-text-muted">
-          {item.date} · {item.timeLeft}
-        </p>
+        {item.episode.air_date && (
+          <p className="mt-0.5 font-body text-xs text-text-muted">{item.episode.air_date}</p>
+        )}
       </div>
-    </div>
+    </Link>
   );
 }
 
 export default function TvShowsPage() {
   const pathname = usePathname();
   const [activeFilter, setActiveFilter] = useState(tvShowFilters[0]);
+
+  const [trendingShows, setTrendingShows] = useState<Series[]>([]);
+  const [moreShows, setMoreShows] = useState<Series[]>([]);
+  const [latestEpisodes, setLatestEpisodes] = useState<LatestEpisode[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const heroShow = trendingShows[0] ?? moreShows[0] ?? null;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      setIsLoading(true);
+      try {
+        const list = await fetchSeriesList({ perPage: 10 });
+        if (cancelled) return;
+
+        setTrendingShows(list.slice(0, 5));
+        setMoreShows(list.slice(5, 10));
+
+        const detailed = await Promise.all(list.slice(0, 6).map((s) => fetchSeriesBySlug(s.slug)));
+        if (cancelled) return;
+
+        const latest = detailed
+          .map((series): LatestEpisode | null => {
+            const all = (series.seasons ?? []).flatMap((season) =>
+              (season.episodes ?? []).map((episode) => ({ series, season, episode })),
+            );
+            return all.sort((a, b) => (b.episode.air_date ?? "").localeCompare(a.episode.air_date ?? ""))[0] ?? null;
+          })
+          .filter((item): item is LatestEpisode => item !== null)
+          .sort((a, b) => (b.episode.air_date ?? "").localeCompare(a.episode.air_date ?? ""))
+          .slice(0, 6);
+
+        setLatestEpisodes(latest);
+      } catch {
+        if (!cancelled) {
+          setTrendingShows([]);
+          setMoreShows([]);
+          setLatestEpisodes([]);
+        }
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <>
@@ -174,13 +172,29 @@ export default function TvShowsPage() {
               </p>
 
               <div className="mt-7 flex flex-wrap items-center gap-4">
-                <button className="flex items-center gap-2 rounded-md bg-primary px-6 py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary shadow-primary transition-colors duration-150 hover:bg-accent">
-                  <Play size={18} fill="currentColor" />
-                  Watch Now
-                </button>
-                <button className="rounded-md border border-text-primary px-6 py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary transition-colors duration-150 hover:border-primary hover:bg-primary">
+                {heroShow ? (
+                  <Link
+                    href={`/series/${heroShow.slug}`}
+                    className="flex items-center gap-2 rounded-md bg-primary px-6 py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary shadow-primary transition-colors duration-150 hover:bg-accent"
+                  >
+                    <Play size={18} fill="currentColor" />
+                    Watch Now
+                  </Link>
+                ) : (
+                  <a
+                    href="#tv-catalog"
+                    className="flex items-center gap-2 rounded-md bg-primary px-6 py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary shadow-primary transition-colors duration-150 hover:bg-accent"
+                  >
+                    <Play size={18} fill="currentColor" />
+                    Watch Now
+                  </a>
+                )}
+                <a
+                  href="#tv-catalog"
+                  className="rounded-md border border-text-primary px-6 py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary transition-colors duration-150 hover:border-primary hover:bg-primary"
+                >
                   Browse All
-                </button>
+                </a>
               </div>
             </div>
 
@@ -208,74 +222,97 @@ export default function TvShowsPage() {
         </section>
         {/* ====================== Hero Section: End ====================== */}
 
-        {/* ==================== Trending Now Section: Start ==================== */}
-        <section className="mx-auto max-w-360 px-4 py-8 sm:px-6 lg:px-10">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-ui text-xl font-semibold text-text-primary sm:text-2xl">
-              Trending Now
-            </h2>
-            <a
-              href="#"
-              className="flex items-center gap-1 font-ui text-sm font-medium text-primary transition-colors duration-150 hover:text-accent"
-            >
-              View All
-              <ChevronRight size={16} />
-            </a>
-          </div>
+        <div id="tv-catalog">
+          {isLoading ? (
+            <div className="flex justify-center py-16">
+              <Loader2 size={20} className="animate-spin text-text-secondary" />
+            </div>
+          ) : (
+            <>
+              {/* ==================== Trending Now Section: Start ==================== */}
+              {trendingShows.length > 0 && (
+                <section className="mx-auto max-w-360 px-4 py-8 sm:px-6 lg:px-10">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h2 className="font-ui text-xl font-semibold text-text-primary sm:text-2xl">
+                      Trending Now
+                    </h2>
+                    <a
+                      href="#"
+                      className="flex items-center gap-1 font-ui text-sm font-medium text-primary transition-colors duration-150 hover:text-accent"
+                    >
+                      View All
+                      <ChevronRight size={16} />
+                    </a>
+                  </div>
 
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-            {trendingShows.map((show) => (
-              <TrendingCard key={show.id} show={show} />
-            ))}
-          </div>
-        </section>
-        {/* ===================== Trending Now Section: End ===================== */}
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+                    {trendingShows.map((show) => (
+                      <PosterCard
+                        key={show.id}
+                        href={`/series/${show.slug}`}
+                        title={show.title}
+                        posterUrl={show.poster_url}
+                        subtitle={seriesSubtitle(show)}
+                        cornerTag={show.certification ?? undefined}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
+              {/* ===================== Trending Now Section: End ===================== */}
 
-        {/* ====================== Top Rated Section: Start ====================== */}
-        <section className="mx-auto max-w-360 px-4 py-8 sm:px-6 lg:px-10">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-ui text-xl font-semibold text-text-primary sm:text-2xl">
-              Top Rated
-            </h2>
-            <a
-              href="#"
-              className="flex items-center gap-1 font-ui text-sm font-medium text-primary transition-colors duration-150 hover:text-accent"
-            >
-              View All
-              <ChevronRight size={16} />
-            </a>
-          </div>
+              {/* ====================== More Series Section: Start ====================== */}
+              {moreShows.length > 0 && (
+                <section className="mx-auto max-w-360 px-4 py-8 sm:px-6 lg:px-10">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h2 className="font-ui text-xl font-semibold text-text-primary sm:text-2xl">
+                      More Series
+                    </h2>
+                    <a
+                      href="#"
+                      className="flex items-center gap-1 font-ui text-sm font-medium text-primary transition-colors duration-150 hover:text-accent"
+                    >
+                      View All
+                      <ChevronRight size={16} />
+                    </a>
+                  </div>
 
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-            {topRatedShows.map((show) => (
-              <TopRatedCard key={show.id} show={show} />
-            ))}
-          </div>
-        </section>
-        {/* ======================= Top Rated Section: End ======================= */}
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+                    {moreShows.map((show) => (
+                      <PosterCard
+                        key={show.id}
+                        href={`/series/${show.slug}`}
+                        title={show.title}
+                        posterUrl={show.poster_url}
+                        subtitle={seriesSubtitle(show)}
+                        cornerTag={show.certification ?? undefined}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
+              {/* ======================= More Series Section: End ======================= */}
 
-        {/* ===================== New Episodes Section: Start ===================== */}
-        <section className="mx-auto max-w-360 px-4 py-8 sm:px-6 lg:px-10">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-ui text-xl font-semibold text-text-primary sm:text-2xl">
-              New Episodes
-            </h2>
-            <a
-              href="#"
-              className="flex items-center gap-1 font-ui text-sm font-medium text-primary transition-colors duration-150 hover:text-accent"
-            >
-              View All
-              <ChevronRight size={16} />
-            </a>
-          </div>
+              {/* ===================== Latest Episodes Section: Start ===================== */}
+              {latestEpisodes.length > 0 && (
+                <section className="mx-auto max-w-360 px-4 py-8 sm:px-6 lg:px-10">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h2 className="font-ui text-xl font-semibold text-text-primary sm:text-2xl">
+                      Latest Episodes
+                    </h2>
+                  </div>
 
-          <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
-            {newEpisodes.map((item) => (
-              <NewEpisodeRow key={item.id} item={item} />
-            ))}
-          </div>
-        </section>
-        {/* ====================== New Episodes Section: End ====================== */}
+                  <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
+                    {latestEpisodes.map((item) => (
+                      <NewEpisodeRow key={item.episode.id} item={item} />
+                    ))}
+                  </div>
+                </section>
+              )}
+              {/* ====================== Latest Episodes Section: End ====================== */}
+            </>
+          )}
+        </div>
       </div>
 
       {/* Mobile app-style bottom nav — page-scoped for now; move into _app.tsx

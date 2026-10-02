@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import {
   Play,
   ChevronRight,
@@ -22,11 +23,12 @@ import {
   MonitorSmartphone,
 } from "lucide-react";
 import {
-  continueWatching,
   channelCategories,
   scheduleTimes,
   liveChannels,
 } from "@/lib/demo-data";
+import { useAuth } from "@/lib/auth-context";
+import { fetchWatchHistory, type WatchHistoryEntry } from "@/lib/watch-history";
 
 const devices = [
   { label: "Smart TV", icon: Tv },
@@ -56,6 +58,29 @@ const appFeatures = [
 
 export default function HomePage() {
   const [activeCategory, setActiveCategory] = useState(channelCategories[0]);
+  const { user } = useAuth();
+  const [watchHistory, setWatchHistory] = useState<WatchHistoryEntry[]>([]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const data = await fetchWatchHistory();
+        if (!cancelled) setWatchHistory(data);
+      } catch {
+        if (!cancelled) setWatchHistory([]);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  const continueWatching = user ? watchHistory : [];
 
   return (
     <>
@@ -102,13 +127,19 @@ export default function HomePage() {
             </p>
 
             <div className="mt-7 flex flex-wrap items-center gap-4">
-              <button className="flex items-center gap-2 rounded-md bg-primary px-6 py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary shadow-primary transition-colors duration-150 hover:bg-accent">
+              <Link
+                href="/pricing"
+                className="flex items-center gap-2 rounded-md bg-primary px-6 py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary shadow-primary transition-colors duration-150 hover:bg-accent"
+              >
                 <Play size={18} fill="currentColor" />
                 Start Watching
-              </button>
-              <button className="rounded-md border border-text-primary px-6 py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary transition-colors duration-150 hover:border-primary hover:bg-primary">
+              </Link>
+              <Link
+                href="/movies"
+                className="rounded-md border border-text-primary px-6 py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary transition-colors duration-150 hover:border-primary hover:bg-primary"
+              >
                 Browse Titles
-              </button>
+              </Link>
             </div>
 
             <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
@@ -131,64 +162,56 @@ export default function HomePage() {
       {/* ====================== Hero Section: End ====================== */}
 
       {/* ================ Continue Watching Section: Start ================ */}
-      <section className="mx-auto max-w-360 px-4 py-8 sm:px-6 lg:px-10">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-ui text-xl font-semibold text-text-primary sm:text-2xl">
-            Continue Watching
-          </h2>
-          <a
-            href="#"
-            className="flex items-center gap-1 font-ui text-sm font-medium text-primary transition-colors duration-150 hover:text-accent"
-          >
-            View All
-            <ChevronRight size={16} />
-          </a>
-        </div>
+      {continueWatching.length > 0 && (
+        <section className="mx-auto max-w-360 px-4 py-8 sm:px-6 lg:px-10">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-ui text-xl font-semibold text-text-primary sm:text-2xl">
+              Continue Watching
+            </h2>
+          </div>
 
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          {continueWatching.map((item) => (
-            <div
-              key={item.id}
-              className="group relative aspect-video overflow-hidden rounded-md border border-border bg-surface"
-            >
-              <Image
-                src="/images/movie-preview.png"
-                alt=""
-                fill
-                sizes="(max-width: 640px) 50vw, 25vw"
-                className="object-cover"
-              />
-              <div className="absolute inset-0 bg-linear-to-t from-black via-black/25 to-black/10 transition-colors duration-150 group-hover:from-black/90" />
-
-              <button
-                aria-label={`Resume ${item.title}`}
-                className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-text-primary opacity-90 backdrop-blur-sm transition-transform duration-150 group-hover:scale-110"
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            {continueWatching.map((item) => (
+              <Link
+                key={`${item.type}-${item.id}`}
+                href={item.url ?? "#"}
+                className="group relative aspect-video overflow-hidden rounded-md border border-border bg-surface"
               >
-                <Play size={16} fill="currentColor" />
-              </button>
+                <Image
+                  src={item.poster_url ?? "/images/movie-preview.png"}
+                  alt=""
+                  fill
+                  sizes="(max-width: 640px) 50vw, 25vw"
+                  className="object-cover"
+                />
+                <div className="absolute inset-0 bg-linear-to-t from-black via-black/25 to-black/10 transition-colors duration-150 group-hover:from-black/90" />
 
-              <div className="absolute inset-x-0 bottom-0 p-3">
-                <p
-                  className={`font-heading text-2xl uppercase tracking-wide ${
-                    item.accent ? "text-accent" : "text-text-primary"
-                  }`}
+                <span
+                  aria-label={`Resume ${item.title ?? "title"}`}
+                  className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-text-primary opacity-90 backdrop-blur-sm transition-transform duration-150 group-hover:scale-110"
                 >
-                  {item.title}
-                </p>
-                <p className="mt-0.5 font-ui text-xs text-text-secondary">
-                  {item.meta}
-                </p>
-                <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-white/20">
-                  <div
-                    className="h-full rounded-full bg-primary"
-                    style={{ width: `${item.progress}%` }}
-                  />
+                  <Play size={16} fill="currentColor" />
+                </span>
+
+                <div className="absolute inset-x-0 bottom-0 p-3">
+                  <p className="font-heading text-2xl uppercase tracking-wide text-text-primary">
+                    {item.title ?? "Untitled"}
+                  </p>
+                  <p className="mt-0.5 font-ui text-xs text-text-secondary">
+                    {item.type === "episode" ? "Episode" : "Movie"}
+                  </p>
+                  <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-white/20">
+                    <div
+                      className="h-full rounded-full bg-primary"
+                      style={{ width: `${item.progress_percent}%` }}
+                    />
+                  </div>
                 </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
       {/* ================= Continue Watching Section: End ================= */}
 
       {/* ================== Live TV Channels Section: Start ================== */}

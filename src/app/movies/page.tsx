@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -14,14 +14,11 @@ import {
   Tv,
   Radio,
   Bookmark,
+  Loader2,
 } from "lucide-react";
-import {
-  movieGenreFilters,
-  featuredMovies,
-  trendingMovies,
-  newReleaseMovies,
-  type Movie,
-} from "@/lib/demo-data";
+import { movieGenreFilters } from "@/lib/demo-data";
+import { fetchMovies, type Movie } from "@/lib/movies";
+import { PosterCard } from "@/components/PosterCard";
 
 const genreIcons: Record<string, React.ComponentType<{ size?: number }>> = {
   Featured: Star,
@@ -36,53 +33,19 @@ const bottomNavItems = [
   { label: "My List", href: "/my-list", icon: Bookmark },
 ];
 
-function MoviePoster({ movie }: { movie: Movie }) {
-  return (
-    <div className="relative aspect-2/3 overflow-hidden rounded-md border border-border bg-surface">
-      {movie.isNew && (
-        <span className="absolute left-2 top-2 z-10 rounded bg-primary px-2 py-0.5 font-ui text-[10px] font-bold uppercase tracking-wide text-text-primary">
-          New
-        </span>
-      )}
-      <Image
-        src="/images/movie-poster.png"
-        alt=""
-        fill
-        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-        className="object-cover"
-      />
-      <div className="absolute inset-0 bg-linear-to-t from-black via-black/40 to-transparent" />
-
-      <div className="absolute inset-x-0 bottom-0 p-3">
-        <p className="line-clamp-1 font-ui text-sm font-semibold text-text-primary">
-          {movie.title}
-        </p>
-        <div className="mt-1 flex items-center justify-between gap-2">
-          <span className="font-body text-xs text-text-secondary">
-            {movie.year} · {movie.runtime}
-          </span>
-          <span className="rounded border border-border-light bg-black/40 px-1.5 py-0.5 font-ui text-[10px] font-semibold text-text-secondary backdrop-blur-sm">
-            {movie.rating}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
+function movieSubtitle(movie: Movie): string {
+  return [movie.release_year, movie.runtime_minutes ? `${movie.runtime_minutes} min` : null]
+    .filter(Boolean)
+    .join(" · ");
 }
 
-function MovieRow({
-  title,
-  movies,
-}: {
-  title: string;
-  movies: Movie[];
-}) {
+function MovieRow({ title, movies }: { title: string; movies: Movie[] }) {
+  if (movies.length === 0) return null;
+
   return (
     <section className="mx-auto max-w-360 px-4 py-8 sm:px-6 lg:px-10">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="font-ui text-xl font-semibold text-text-primary sm:text-2xl">
-          {title}
-        </h2>
+        <h2 className="font-ui text-xl font-semibold text-text-primary sm:text-2xl">{title}</h2>
         <a
           href="#"
           className="flex items-center gap-1 font-ui text-sm font-medium text-primary transition-colors duration-150 hover:text-accent"
@@ -94,7 +57,15 @@ function MovieRow({
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
         {movies.map((movie) => (
-          <MoviePoster key={movie.id} movie={movie} />
+          <PosterCard
+            key={movie.id}
+            href={`/movies/${movie.slug}`}
+            title={movie.title}
+            posterUrl={movie.poster_url}
+            subtitle={movieSubtitle(movie)}
+            cornerTag={movie.certification ?? undefined}
+            topLeftBadge={movie.is_ppv ? "PPV" : undefined}
+          />
         ))}
       </div>
     </section>
@@ -104,6 +75,47 @@ function MovieRow({
 export default function MoviesPage() {
   const pathname = usePathname();
   const [activeGenre, setActiveGenre] = useState(movieGenreFilters[0]);
+
+  const [featuredMovies, setFeaturedMovies] = useState<Movie[]>([]);
+  const [trendingMovies, setTrendingMovies] = useState<Movie[]>([]);
+  const [newReleaseMovies, setNewReleaseMovies] = useState<Movie[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const heroMovie = featuredMovies[0] ?? trendingMovies[0] ?? null;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      setIsLoading(true);
+      try {
+        const [featured, latest] = await Promise.all([
+          fetchMovies({ featured: true, perPage: 10 }),
+          fetchMovies({ perPage: 15 }),
+        ]);
+
+        if (cancelled) return;
+
+        setFeaturedMovies(featured);
+        setTrendingMovies(latest.slice(0, 5));
+        setNewReleaseMovies(
+          [...latest].sort((a, b) => (b.release_year ?? 0) - (a.release_year ?? 0)).slice(0, 5),
+        );
+      } catch {
+        if (!cancelled) {
+          setFeaturedMovies([]);
+          setTrendingMovies([]);
+          setNewReleaseMovies([]);
+        }
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <>
@@ -142,13 +154,29 @@ export default function MoviesPage() {
               </p>
 
               <div className="mt-7 flex flex-wrap items-center gap-4">
-                <button className="flex items-center gap-2 rounded-md bg-primary px-6 py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary shadow-primary transition-colors duration-150 hover:bg-accent">
-                  <Play size={18} fill="currentColor" />
-                  Play Trailer
-                </button>
-                <button className="rounded-md border border-text-primary px-6 py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary transition-colors duration-150 hover:border-primary hover:bg-primary">
+                {heroMovie ? (
+                  <Link
+                    href={`/movies/${heroMovie.slug}`}
+                    className="flex items-center gap-2 rounded-md bg-primary px-6 py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary shadow-primary transition-colors duration-150 hover:bg-accent"
+                  >
+                    <Play size={18} fill="currentColor" />
+                    Play Trailer
+                  </Link>
+                ) : (
+                  <a
+                    href="#movies-catalog"
+                    className="flex items-center gap-2 rounded-md bg-primary px-6 py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary shadow-primary transition-colors duration-150 hover:bg-accent"
+                  >
+                    <Play size={18} fill="currentColor" />
+                    Play Trailer
+                  </a>
+                )}
+                <a
+                  href="#movies-catalog"
+                  className="rounded-md border border-text-primary px-6 py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary transition-colors duration-150 hover:border-primary hover:bg-primary"
+                >
                   Browse All
-                </button>
+                </a>
               </div>
             </div>
 
@@ -176,9 +204,19 @@ export default function MoviesPage() {
         </section>
         {/* ====================== Hero Section: End ====================== */}
 
-        <MovieRow title="Featured Movies" movies={featuredMovies} />
-        <MovieRow title="Trending Now" movies={trendingMovies} />
-        <MovieRow title="New Releases" movies={newReleaseMovies} />
+        <div id="movies-catalog">
+          {isLoading ? (
+            <div className="flex justify-center py-16">
+              <Loader2 size={20} className="animate-spin text-text-secondary" />
+            </div>
+          ) : (
+            <>
+              <MovieRow title="Featured Movies" movies={featuredMovies} />
+              <MovieRow title="Trending Now" movies={trendingMovies} />
+              <MovieRow title="New Releases" movies={newReleaseMovies} />
+            </>
+          )}
+        </div>
       </div>
 
       {/* Mobile app-style bottom nav — page-scoped for now; move into _app.tsx

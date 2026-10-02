@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Bebas_Neue, Roboto_Condensed, Roboto, Permanent_Marker } from "next/font/google";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { AuthProvider } from "@/lib/auth-context";
+import { FavoritesProvider } from "@/lib/favorites-context";
 import "./globals.css";
 
 const fontHeading = Bebas_Neue({
@@ -46,9 +48,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${fontHeading.variable} ${fontUi.variable} ${fontBody.variable} ${fontAccent.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-text-primary font-body">
-        <Header />
-        <main className="flex-1">{children}</main>
-        <Footer />
+        <AuthProvider>
+          <FavoritesProvider>
+            <Header />
+            <main className="flex-1">{children}</main>
+            <Footer />
+          </FavoritesProvider>
+        </AuthProvider>
       </body>
     </html>
   );

@@ -7,6 +7,7 @@ export const mainNavLinks = [
   { label: "Live TV", href: "/live-tv" },
   { label: "Originals", href: "/originals" },
   { label: "My List", href: "/my-list" },
+  { label: "Pricing", href: "/pricing" },
 ];
 
 export type ContinueWatchingItem = {

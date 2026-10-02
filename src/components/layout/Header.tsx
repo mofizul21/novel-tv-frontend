@@ -4,15 +4,20 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { Search, UserCircle2, Menu, X } from "lucide-react";
+import { Search, UserCircle2, Menu, X, Film, Tv as TvIcon, Loader2 } from "lucide-react";
 import { mainNavLinks } from "@/lib/demo-data";
+import { useAuth } from "@/lib/auth-context";
+import { searchCatalog, type SearchResult } from "@/lib/search";
 
 export function Header() {
   const pathname = usePathname();
   const router = useRouter();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -28,12 +33,50 @@ export function Header() {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [searchOpen]);
 
+  // Live "ajax" search-as-you-type: debounce so we don't hit the API on every keystroke.
+  // Nothing here sets state synchronously in the effect body itself (only inside the
+  // setTimeout/promise callbacks) — required by the react-hooks/set-state-in-effect rule.
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (trimmed.length < 2) {
+      return;
+    }
+
+    let cancelled = false;
+    const timeout = setTimeout(() => {
+      setIsSearching(true);
+      searchCatalog(trimmed)
+        .then((response) => {
+          if (!cancelled) setResults(response.data.slice(0, 6));
+        })
+        .catch(() => {
+          if (!cancelled) setResults([]);
+        })
+        .finally(() => {
+          if (!cancelled) setIsSearching(false);
+        });
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
+  }, [query]);
+
+  function goToResultsPage(q: string) {
+    const trimmed = q.trim();
+    if (!trimmed) return;
+    router.push(`/search?q=${encodeURIComponent(trimmed)}`);
+    setSearchOpen(false);
+    setResults([]);
+  }
+
   function handleSearchSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const q = query.trim();
-    if (q) router.push(`/search?q=${encodeURIComponent(q)}`);
-    setSearchOpen(false);
+    goToResultsPage(query);
   }
+
+  const showDropdown = searchOpen && query.trim().length >= 2;
 
   return (
     <header
@@ -82,8 +125,8 @@ export function Header() {
             {searchOpen ? <X size={20} /> : <Search size={20} />}
           </button>
           <Link
-            href="/login"
-            aria-label="Account"
+            href={user ? "/dashboard" : "/login"}
+            aria-label={user ? "Your account" : "Sign in"}
             className="text-text-primary transition-colors duration-150 hover:text-accent"
           >
             <UserCircle2 size={26} />
@@ -122,6 +165,59 @@ export function Header() {
               <X size={18} />
             </button>
           </form>
+
+          {showDropdown && (
+            <div className="mx-auto mt-3 max-w-360">
+              <div className="max-h-96 overflow-y-auto rounded-md border border-border bg-surface shadow-md">
+                {isSearching ? (
+                  <div className="flex items-center gap-2 px-4 py-3 font-body text-sm text-text-secondary">
+                    <Loader2 size={14} className="animate-spin" />
+                    Searching…
+                  </div>
+                ) : results.length === 0 ? (
+                  <p className="px-4 py-3 font-body text-sm text-text-secondary">
+                    No matches for &ldquo;{query.trim()}&rdquo;.
+                  </p>
+                ) : (
+                  <>
+                    {results.map((result) => {
+                      const TypeIcon = result.type === "series" ? TvIcon : Film;
+                      return (
+                        <button
+                          key={`${result.type}-${result.id}`}
+                          type="button"
+                          onClick={() => goToResultsPage(result.title)}
+                          className="flex w-full items-center gap-3 border-b border-border/60 px-4 py-2.5 text-left transition-colors duration-150 last:border-b-0 hover:bg-surface-hover"
+                        >
+                          <TypeIcon size={16} className="shrink-0 text-text-muted" />
+                          <span className="flex-1 truncate font-body text-sm text-text-primary">
+                            {result.title}
+                          </span>
+                          {result.year && (
+                            <span className="shrink-0 font-body text-xs text-text-muted">
+                              {result.year}
+                            </span>
+                          )}
+                          {result.is_ppv && (
+                            <span className="shrink-0 rounded border border-border-light px-1.5 py-0.5 font-ui text-[10px] font-semibold uppercase text-text-secondary">
+                              PPV
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                    <button
+                      type="button"
+                      onClick={() => goToResultsPage(query)}
+                      className="w-full px-4 py-2.5 text-left font-ui text-sm font-semibold text-primary transition-colors duration-150 hover:text-accent"
+                    >
+                      See all results for &ldquo;{query.trim()}&rdquo;
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

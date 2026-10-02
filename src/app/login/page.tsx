@@ -1,9 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { ApiError } from "@/lib/api";
+import { loginUser } from "@/lib/auth";
+import { useAuth } from "@/lib/auth-context";
+import { getSafeRedirectPath } from "@/lib/safe-redirect";
 
 function GoogleIcon() {
   return (
@@ -40,12 +45,34 @@ function FacebookIcon() {
   );
 }
 
-export default function LoginPage() {
-  const [showPassword, setShowPassword] = useState(false);
+function LoginForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { setUser } = useAuth();
+  const justRegistered = searchParams.get("registered") === "1";
+  const redirectParam = searchParams.get("redirect");
+  const redirectTarget = getSafeRedirectPath(redirectParam);
 
-  function handleSubmit(e: React.FormEvent) {
+  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
-    // Wire up to the Authentication API once the backend is ready.
+    setError(null);
+    setIsSubmitting(true);
+
+    try {
+      const user = await loginUser({ email, password });
+      setUser(user);
+      router.push(redirectTarget);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -75,6 +102,18 @@ export default function LoginPage() {
         </p>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+          {justRegistered && !error && (
+            <p className="rounded-md border border-success/30 bg-success/10 px-3 py-2 font-body text-sm text-success">
+              Account created — sign in to continue.
+            </p>
+          )}
+
+          {error && (
+            <p className="rounded-md border border-error/30 bg-error/10 px-3 py-2 font-body text-sm text-error">
+              {error}
+            </p>
+          )}
+
           <div>
             <label className="mb-1.5 block font-ui text-xs font-semibold uppercase tracking-wide text-text-secondary">
               Email
@@ -84,6 +123,8 @@ export default function LoginPage() {
               <input
                 type="email"
                 required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 className="w-full bg-transparent font-body text-sm text-text-primary placeholder:text-text-muted focus:outline-none"
               />
@@ -99,6 +140,8 @@ export default function LoginPage() {
               <input
                 type={showPassword ? "text" : "password"}
                 required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
                 className="w-full bg-transparent font-body text-sm text-text-primary placeholder:text-text-muted focus:outline-none"
               />
@@ -128,9 +171,10 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            className="w-full rounded-md bg-primary py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary shadow-primary transition-colors duration-150 hover:bg-accent"
+            disabled={isSubmitting}
+            className="w-full rounded-md bg-primary py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary shadow-primary transition-colors duration-150 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Sign In
+            {isSubmitting ? "Signing In..." : "Sign In"}
           </button>
         </form>
 
@@ -155,11 +199,22 @@ export default function LoginPage() {
 
         <p className="mt-6 text-center font-body text-sm text-text-secondary">
           New to Novel TV?{" "}
-          <Link href="/register" className="font-semibold text-primary hover:text-accent">
+          <Link
+            href={redirectParam ? `/register?redirect=${encodeURIComponent(redirectParam)}` : "/register"}
+            className="font-semibold text-primary hover:text-accent"
+          >
             Create Account
           </Link>
         </p>
       </div>
     </section>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
   );
 }

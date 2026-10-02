@@ -1,9 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { User, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { ApiError } from "@/lib/api";
+import { registerUser } from "@/lib/auth";
 
 function GoogleIcon() {
   return (
@@ -40,12 +43,46 @@ function FacebookIcon() {
   );
 }
 
-export default function RegisterPage() {
+function RegisterForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectParam = searchParams.get("redirect");
   const [showPassword, setShowPassword] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordConfirmation, setPasswordConfirmation] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
-    // Wire up to the Authentication API once the backend is ready.
+    setError(null);
+    setFieldErrors({});
+    setIsSubmitting(true);
+
+    try {
+      await registerUser({
+        name,
+        email,
+        password,
+        password_confirmation: passwordConfirmation,
+      });
+      const loginUrl = redirectParam
+        ? `/login?registered=1&redirect=${encodeURIComponent(redirectParam)}`
+        : "/login?registered=1";
+      router.push(loginUrl);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+        setFieldErrors(err.errors ?? {});
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -75,6 +112,12 @@ export default function RegisterPage() {
         </p>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+          {error && (
+            <p className="rounded-md border border-error/30 bg-error/10 px-3 py-2 font-body text-sm text-error">
+              {error}
+            </p>
+          )}
+
           <div>
             <label className="mb-1.5 block font-ui text-xs font-semibold uppercase tracking-wide text-text-secondary">
               Full Name
@@ -84,10 +127,15 @@ export default function RegisterPage() {
               <input
                 type="text"
                 required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 placeholder="Jordan Smith"
                 className="w-full bg-transparent font-body text-sm text-text-primary placeholder:text-text-muted focus:outline-none"
               />
             </div>
+            {fieldErrors.name && (
+              <p className="mt-1 font-body text-xs text-error">{fieldErrors.name[0]}</p>
+            )}
           </div>
 
           <div>
@@ -99,10 +147,15 @@ export default function RegisterPage() {
               <input
                 type="email"
                 required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 className="w-full bg-transparent font-body text-sm text-text-primary placeholder:text-text-muted focus:outline-none"
               />
             </div>
+            {fieldErrors.email && (
+              <p className="mt-1 font-body text-xs text-error">{fieldErrors.email[0]}</p>
+            )}
           </div>
 
           <div>
@@ -115,6 +168,8 @@ export default function RegisterPage() {
                 type={showPassword ? "text" : "password"}
                 required
                 minLength={8}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="At least 8 characters"
                 className="w-full bg-transparent font-body text-sm text-text-primary placeholder:text-text-muted focus:outline-none"
               />
@@ -126,6 +181,27 @@ export default function RegisterPage() {
               >
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
+            </div>
+            {fieldErrors.password && (
+              <p className="mt-1 font-body text-xs text-error">{fieldErrors.password[0]}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="mb-1.5 block font-ui text-xs font-semibold uppercase tracking-wide text-text-secondary">
+              Confirm Password
+            </label>
+            <div className="flex items-center gap-2 rounded-md border border-border bg-surface-light px-3 py-2.5 focus-within:border-primary">
+              <Lock size={16} className="text-text-muted" />
+              <input
+                type={showPassword ? "text" : "password"}
+                required
+                minLength={8}
+                value={passwordConfirmation}
+                onChange={(e) => setPasswordConfirmation(e.target.value)}
+                placeholder="Re-enter your password"
+                className="w-full bg-transparent font-body text-sm text-text-primary placeholder:text-text-muted focus:outline-none"
+              />
             </div>
           </div>
 
@@ -147,9 +223,10 @@ export default function RegisterPage() {
 
           <button
             type="submit"
-            className="w-full rounded-md bg-primary py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary shadow-primary transition-colors duration-150 hover:bg-accent"
+            disabled={isSubmitting}
+            className="w-full rounded-md bg-primary py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary shadow-primary transition-colors duration-150 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Create Account
+            {isSubmitting ? "Creating Account..." : "Create Account"}
           </button>
         </form>
 
@@ -174,11 +251,22 @@ export default function RegisterPage() {
 
         <p className="mt-6 text-center font-body text-sm text-text-secondary">
           Already have an account?{" "}
-          <Link href="/login" className="font-semibold text-primary hover:text-accent">
+          <Link
+            href={redirectParam ? `/login?redirect=${encodeURIComponent(redirectParam)}` : "/login"}
+            className="font-semibold text-primary hover:text-accent"
+          >
             Sign In
           </Link>
         </p>
       </div>
     </section>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={null}>
+      <RegisterForm />
+    </Suspense>
   );
 }

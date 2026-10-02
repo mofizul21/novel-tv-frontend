@@ -13,7 +13,8 @@ import {
   Radio,
   Bookmark,
 } from "lucide-react";
-import { myListItems, type SavedItem } from "@/lib/demo-data";
+import { useFavorites } from "@/lib/favorites-context";
+import type { FavoriteEntry } from "@/lib/favorites";
 
 const listFilters = ["All", "Movies", "TV Shows"] as const;
 
@@ -25,54 +26,74 @@ const bottomNavItems = [
   { label: "My List", href: "/my-list", icon: Bookmark },
 ];
 
-function SavedCard({ item }: { item: SavedItem }) {
+function SavedCard({
+  item,
+  onRemove,
+}: {
+  item: FavoriteEntry;
+  onRemove: (item: FavoriteEntry) => void;
+}) {
+  const href = item.slug
+    ? item.type === "movie"
+      ? `/movies/${item.slug}`
+      : `/series/${item.slug}`
+    : "#";
+
   return (
     <div className="group relative aspect-2/3 overflow-hidden rounded-md border border-border bg-surface">
       <span className="absolute left-2 top-2 z-10 rounded bg-black/60 px-2 py-0.5 font-ui text-[10px] font-bold uppercase tracking-wide text-text-secondary backdrop-blur-sm">
-        {item.type}
+        {item.type === "movie" ? "Movie" : "TV Show"}
       </span>
       <button
-        aria-label={`Remove ${item.title} from My List`}
+        aria-label={`Remove ${item.title ?? "title"} from My List`}
+        onClick={(e) => {
+          e.preventDefault();
+          onRemove(item);
+        }}
         className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-text-primary opacity-0 backdrop-blur-sm transition-opacity duration-150 hover:bg-error group-hover:opacity-100"
       >
         <X size={14} />
       </button>
-      <Image
-        src="/images/movie-poster.png"
-        alt=""
-        fill
-        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-        className="object-cover"
-      />
-      <div className="absolute inset-0 bg-linear-to-t from-black via-black/40 to-transparent" />
+      <Link href={href} className="absolute inset-0 block">
+        <Image
+          src={item.poster_url ?? "/images/movie-poster.png"}
+          alt=""
+          fill
+          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+          className="object-cover"
+        />
+        <div className="absolute inset-0 bg-linear-to-t from-black via-black/40 to-transparent" />
 
-      <div className="absolute inset-x-0 bottom-0 p-3">
-        <p className="line-clamp-1 font-ui text-sm font-semibold text-text-primary">
-          {item.title}
-        </p>
-        <div className="mt-1 flex items-center justify-between gap-2">
-          <span className="font-body text-xs text-text-secondary">
-            {item.year} · {item.meta}
-          </span>
-          <span className="rounded border border-border-light bg-black/40 px-1.5 py-0.5 font-ui text-[10px] font-semibold text-text-secondary backdrop-blur-sm">
-            {item.rating}
-          </span>
+        <div className="absolute inset-x-0 bottom-0 p-3">
+          <p className="line-clamp-1 font-ui text-sm font-semibold text-text-primary">
+            {item.title ?? "Untitled"}
+          </p>
+          {item.year && (
+            <span className="font-body text-xs text-text-secondary">
+              {item.year}
+            </span>
+          )}
         </div>
-      </div>
+      </Link>
     </div>
   );
 }
 
 export default function MyListPage() {
   const pathname = usePathname();
+  const { favorites, toggle } = useFavorites();
   const [activeFilter, setActiveFilter] =
     useState<(typeof listFilters)[number]>("All");
 
-  const items = myListItems.filter((item) => {
+  const items = favorites.filter((item) => {
     if (activeFilter === "All") return true;
-    if (activeFilter === "Movies") return item.type === "Movie";
-    return item.type === "TV Show";
+    if (activeFilter === "Movies") return item.type === "movie";
+    return item.type === "series";
   });
+
+  function handleRemove(item: FavoriteEntry) {
+    void toggle(item.type, item.favoritable_id);
+  }
 
   return (
     <>
@@ -116,7 +137,7 @@ export default function MyListPage() {
 
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
             {items.map((item) => (
-              <SavedCard key={item.id} item={item} />
+              <SavedCard key={item.id} item={item} onRemove={handleRemove} />
             ))}
           </div>
         </section>

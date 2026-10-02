@@ -1,0 +1,80 @@
+import { apiFetch } from "./api";
+import type {
+  CastMember,
+  ContentAccess,
+  Country,
+  Director,
+  Genre,
+  Language,
+  PaginatedResponse,
+} from "./catalog-types";
+
+export type Episode = {
+  id: number;
+  number: number;
+  title: string;
+  overview: string | null;
+  runtime_minutes: number | null;
+  still_url: string | null;
+  mux_playback_id: string | null;
+  mux_playback_policy: "public" | "signed" | null;
+  air_date: string | null;
+};
+
+export type Season = {
+  id: number;
+  number: number;
+  title: string | null;
+  overview: string | null;
+  poster_url: string | null;
+  air_year: number | null;
+  episodes?: Episode[];
+};
+
+export type Series = {
+  id: number;
+  title: string;
+  slug: string;
+  synopsis: string | null;
+  first_air_year: number | null;
+  certification: string | null;
+  poster_url: string | null;
+  backdrop_url: string | null;
+  trailer_url: string | null;
+  is_featured: boolean;
+  is_ppv: boolean;
+  ppv_price: number | null;
+  published_at: string | null;
+  country?: Country;
+  genres?: Genre[];
+  languages?: Language[];
+  directors?: Director[];
+  cast?: CastMember[];
+  seasons?: Season[];
+};
+
+export async function fetchSeriesList(
+  params: { genre?: string; featured?: boolean; perPage?: number } = {},
+): Promise<Series[]> {
+  const search = new URLSearchParams();
+  if (params.genre) search.set("genre", params.genre);
+  if (params.featured) search.set("featured", "1");
+  if (params.perPage) search.set("per_page", String(params.perPage));
+
+  const qs = search.toString();
+  const response = await apiFetch<PaginatedResponse<Series>>(`series${qs ? `?${qs}` : ""}`);
+  return response.data;
+}
+
+export async function fetchSeriesBySlug(slug: string): Promise<Series> {
+  const response = await apiFetch<{ data: Series }>(`series/${encodeURIComponent(slug)}`);
+  return response.data;
+}
+
+/**
+ * Whether the current authenticated user can actually stream this series'
+ * episodes (as opposed to just seeing its metadata). Requires a logged-in user.
+ */
+export async function fetchSeriesAccess(slug: string): Promise<ContentAccess> {
+  return apiFetch<ContentAccess>(`series/${encodeURIComponent(slug)}/access`);
+}
