@@ -4,10 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { Search, UserCircle2, Menu, X, Film, Tv as TvIcon, Loader2 } from "lucide-react";
+import { Search, UserCircle2, Menu, X, Film, Tv as TvIcon, Loader2, Bell } from "lucide-react";
 import { mainNavLinks } from "@/lib/demo-data";
 import { useAuth } from "@/lib/auth-context";
 import { searchCatalog, type SearchResult } from "@/lib/search";
+import { fetchUnreadNotificationCount } from "@/lib/notifications";
 
 export function Header() {
   const pathname = usePathname();
@@ -18,7 +19,27 @@ export function Header() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!user) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const count = await fetchUnreadNotificationCount();
+        if (!cancelled) setUnreadCount(count);
+      } catch {
+        if (!cancelled) setUnreadCount(0);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   useEffect(() => {
     if (searchOpen) searchInputRef.current?.focus();
@@ -124,6 +145,20 @@ export function Header() {
           >
             {searchOpen ? <X size={20} /> : <Search size={20} />}
           </button>
+          {user && (
+            <Link
+              href="/notifications"
+              aria-label={unreadCount > 0 ? `Notifications (${unreadCount} unread)` : "Notifications"}
+              className="relative text-text-primary transition-colors duration-150 hover:text-accent"
+            >
+              <Bell size={22} />
+              {unreadCount > 0 && (
+                <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 font-ui text-[10px] font-bold text-text-primary">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </Link>
+          )}
           <Link
             href={user ? "/dashboard" : "/login"}
             aria-label={user ? "Your account" : "Sign in"}

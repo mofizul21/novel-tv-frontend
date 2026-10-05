@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, Mail, User as UserIcon, CalendarDays } from "lucide-react";
+import Link from "next/link";
+import { LogOut, Mail, User as UserIcon, CalendarDays, KeyRound } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
 export default function DashboardPage() {
@@ -78,13 +79,21 @@ export default function DashboardPage() {
           </dl>
 
           <p className="mt-6 font-body text-xs text-text-muted">
-            Subscription, billing, and watch history will show up here soon.
+            Subscription and billing history will show up here soon.
           </p>
+
+          <Link
+            href="/dashboard/change-password"
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-md border border-border-light bg-surface-light py-2.5 font-ui text-sm font-semibold text-text-primary transition-colors duration-150 hover:bg-surface-hover"
+          >
+            <KeyRound size={16} />
+            Change Password
+          </Link>
 
           <button
             onClick={handleSignOut}
             disabled={isSigningOut}
-            className="mt-6 flex w-full items-center justify-center gap-2 rounded-md border border-border-light bg-surface-light py-2.5 font-ui text-sm font-semibold text-text-primary transition-colors duration-150 hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-md border border-border-light bg-surface-light py-2.5 font-ui text-sm font-semibold text-text-primary transition-colors duration-150 hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-60"
           >
             <LogOut size={16} />
             {isSigningOut ? "Signing Out..." : "Sign Out"}

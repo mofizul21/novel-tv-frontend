@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PlayCircle } from "lucide-react";
+import { Loader2, PlayCircle } from "lucide-react";
 
 export type ContentPlayerProps = {
   canWatch: boolean;
@@ -7,6 +7,12 @@ export type ContentPlayerProps = {
   videoTitle: string;
   muxPlaybackId?: string | null;
   muxPlaybackPolicy?: "public" | "signed" | null;
+  /**
+   * Required when muxPlaybackPolicy is "signed" — a short-lived JWT from
+   * `GET /episodes/{id}/playback-token`. Pass `undefined` while it's still
+   * being fetched (shows a loader) and `null` if the fetch failed.
+   */
+  muxPlaybackToken?: string | null;
 };
 
 const demoYoutubeId = process.env.NEXT_PUBLIC_DEMO_VIDEO_YOUTUBE_ID?.trim() || null;
@@ -25,6 +31,7 @@ export function ContentPlayer({
   videoTitle,
   muxPlaybackId,
   muxPlaybackPolicy,
+  muxPlaybackToken,
 }: ContentPlayerProps) {
   if (!canWatch) {
     return (
@@ -43,22 +50,42 @@ export function ContentPlayer({
     );
   }
 
+  if (muxPlaybackId && muxPlaybackPolicy === "signed") {
+    if (muxPlaybackToken === undefined) {
+      return (
+        <div className="flex h-full w-full items-center justify-center">
+          <Loader2 size={24} className="animate-spin text-text-secondary" />
+        </div>
+      );
+    }
+
+    if (!muxPlaybackToken) {
+      return (
+        <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-text-muted">
+          <PlayCircle size={40} />
+          <p className="font-body text-sm">Playback isn&apos;t available right now.</p>
+        </div>
+      );
+    }
+
+    return (
+      <iframe
+        src={`https://player.mux.com/${muxPlaybackId}?token=${muxPlaybackToken}&metadata-video-title=${encodeURIComponent(videoTitle)}`}
+        style={{ width: "100%", height: "100%", border: "none" }}
+        allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+        allowFullScreen
+      />
+    );
+  }
+
   if (muxPlaybackId) {
     return (
-      <>
-        <iframe
-          src={`https://player.mux.com/${muxPlaybackId}?metadata-video-title=${encodeURIComponent(videoTitle)}`}
-          style={{ width: "100%", height: "100%", border: "none" }}
-          allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
-          allowFullScreen
-        />
-        {muxPlaybackPolicy === "signed" && (
-          <p className="absolute inset-x-0 bottom-0 bg-black/80 px-4 py-2 font-body text-xs text-text-secondary">
-            This asset uses signed Mux playback — it needs a Mux signing key configured on the backend
-            before it will actually play.
-          </p>
-        )}
-      </>
+      <iframe
+        src={`https://player.mux.com/${muxPlaybackId}?metadata-video-title=${encodeURIComponent(videoTitle)}`}
+        style={{ width: "100%", height: "100%", border: "none" }}
+        allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+        allowFullScreen
+      />
     );
   }
 

@@ -3,7 +3,12 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Loader2 } from "lucide-react";
-import { fetchSubscriptionPlans, startSubscriptionCheckout, type SubscriptionPlan } from "@/lib/subscriptions";
+import {
+  fetchSubscriptionPlans,
+  startSubscriptionCheckout,
+  type CheckoutGateway,
+  type SubscriptionPlan,
+} from "@/lib/subscriptions";
 import { useAuth } from "@/lib/auth-context";
 import { ApiError } from "@/lib/api";
 
@@ -20,7 +25,7 @@ export default function PricingPage() {
 
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [checkoutSlug, setCheckoutSlug] = useState<string | null>(null);
+  const [checkoutKey, setCheckoutKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -42,21 +47,22 @@ export default function PricingPage() {
     };
   }, []);
 
-  async function handleSubscribe(plan: SubscriptionPlan) {
+  async function handleSubscribe(plan: SubscriptionPlan, gateway: CheckoutGateway) {
     if (!user) {
       router.push(`/login?redirect=${encodeURIComponent("/pricing")}`);
       return;
     }
 
+    const key = `${plan.slug}:${gateway}`;
     setError(null);
-    setCheckoutSlug(plan.slug);
+    setCheckoutKey(key);
 
     try {
-      const url = await startSubscriptionCheckout(plan.slug);
+      const url = await startSubscriptionCheckout(plan.slug, gateway);
       window.location.assign(url);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
-      setCheckoutSlug(null);
+      setCheckoutKey(null);
     }
   }
 
@@ -116,13 +122,22 @@ export default function PricingPage() {
                   )}
                 </ul>
 
-                <button
-                  onClick={() => handleSubscribe(plan)}
-                  disabled={checkoutSlug === plan.slug}
-                  className="mt-8 rounded-md bg-primary py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary transition-colors duration-150 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {checkoutSlug === plan.slug ? "Redirecting…" : "Subscribe"}
-                </button>
+                <div className="mt-8 space-y-2">
+                  <button
+                    onClick={() => handleSubscribe(plan, "stripe")}
+                    disabled={checkoutKey === `${plan.slug}:stripe`}
+                    className="w-full rounded-md bg-primary py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary transition-colors duration-150 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {checkoutKey === `${plan.slug}:stripe` ? "Redirecting…" : "Subscribe with Card"}
+                  </button>
+                  <button
+                    onClick={() => handleSubscribe(plan, "paypal")}
+                    disabled={checkoutKey === `${plan.slug}:paypal`}
+                    className="w-full rounded-md border border-border-light bg-surface-light py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary transition-colors duration-150 hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {checkoutKey === `${plan.slug}:paypal` ? "Redirecting…" : "Subscribe with PayPal"}
+                  </button>
+                </div>
               </div>
             ))}
           </div>

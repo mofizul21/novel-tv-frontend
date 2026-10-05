@@ -4,7 +4,7 @@ import { use, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Play, Loader2, Check, Plus } from "lucide-react";
-import { fetchMovieAccess, fetchMovieBySlug, type Movie } from "@/lib/movies";
+import { fetchMovieAccess, fetchMovieBySlug, fetchMoviePlaybackToken, type Movie } from "@/lib/movies";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useFavorites } from "@/lib/favorites-context";
@@ -20,6 +20,7 @@ export default function MovieDetailPage({ params }: { params: Promise<{ slug: st
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [access, setAccess] = useState<ContentAccess | null>(null);
+  const [playbackToken, setPlaybackToken] = useState<string | null | undefined>(undefined);
 
   useEffect(() => {
     let cancelled = false;
@@ -66,6 +67,27 @@ export default function MovieDetailPage({ params }: { params: Promise<{ slug: st
       cancelled = true;
     };
   }, [slug, user]);
+
+  const canWatch = access?.reason === "subscribed" || access?.reason === "ppv_purchased";
+
+  useEffect(() => {
+    if (!movie || movie.mux_playback_policy !== "signed" || !canWatch) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const token = await fetchMoviePlaybackToken(movie.id);
+        if (!cancelled) setPlaybackToken(token);
+      } catch {
+        if (!cancelled) setPlaybackToken(null);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [movie, canWatch]);
 
   if (isLoading) {
     return (
@@ -152,7 +174,7 @@ export default function MovieDetailPage({ params }: { params: Promise<{ slug: st
                   <Play size={18} fill="currentColor" />
                   Subscribe to Watch
                 </Link>
-              ) : access?.reason === "subscribed" || access?.reason === "ppv_purchased" ? (
+              ) : canWatch ? (
                 <a
                   href="#movie-player"
                   className="flex items-center gap-2 rounded-md bg-primary px-6 py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary shadow-primary transition-colors duration-150 hover:bg-accent"
@@ -209,9 +231,12 @@ export default function MovieDetailPage({ params }: { params: Promise<{ slug: st
         <h2 className="mb-4 font-ui text-xl font-semibold text-text-primary sm:text-2xl">Watch</h2>
         <div className="relative aspect-video overflow-hidden rounded-md border border-border bg-black">
           <ContentPlayer
-            canWatch={access?.reason === "subscribed" || access?.reason === "ppv_purchased"}
+            canWatch={canWatch}
             isLoggedIn={Boolean(user)}
             videoTitle={movie.title}
+            muxPlaybackId={movie.mux_playback_id}
+            muxPlaybackPolicy={movie.mux_playback_policy}
+            muxPlaybackToken={playbackToken}
           />
         </div>
       </div>

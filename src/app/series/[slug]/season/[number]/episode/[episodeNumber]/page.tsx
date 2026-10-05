@@ -4,7 +4,7 @@ import { use, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Check, CheckCircle2, ChevronLeft, Loader2, Plus } from "lucide-react";
-import { fetchSeriesAccess, fetchSeriesBySlug, type Series } from "@/lib/series";
+import { fetchEpisodePlaybackToken, fetchSeriesAccess, fetchSeriesBySlug, type Series } from "@/lib/series";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useFavorites } from "@/lib/favorites-context";
@@ -28,6 +28,7 @@ export default function EpisodeDetailPage({
   const [error, setError] = useState<string | null>(null);
   const [access, setAccess] = useState<ContentAccess | null>(null);
   const [watchedProgress, setWatchedProgress] = useState<number | null>(null);
+  const [playbackToken, setPlaybackToken] = useState<string | null | undefined>(undefined);
   const recordedEpisodeId = useRef<number | null>(null);
 
   useEffect(() => {
@@ -94,6 +95,25 @@ export default function EpisodeDetailPage({
     })();
   }, [user, episode, access]);
 
+  useEffect(() => {
+    if (!episode || episode.mux_playback_policy !== "signed" || !access?.can_watch) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const token = await fetchEpisodePlaybackToken(episode.id);
+        if (!cancelled) setPlaybackToken(token);
+      } catch {
+        if (!cancelled) setPlaybackToken(null);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [episode, access]);
+
   async function handleMarkAsWatched() {
     if (!episode) return;
     try {
@@ -145,6 +165,7 @@ export default function EpisodeDetailPage({
                 videoTitle={`${series.title} S${season.number}E${episode.number} ${episode.title}`}
                 muxPlaybackId={episode.mux_playback_id}
                 muxPlaybackPolicy={episode.mux_playback_policy}
+                muxPlaybackToken={playbackToken}
               />
             </div>
 

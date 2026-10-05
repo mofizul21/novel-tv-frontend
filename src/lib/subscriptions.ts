@@ -16,10 +16,15 @@ export async function fetchSubscriptionPlans(): Promise<SubscriptionPlan[]> {
   return response.data;
 }
 
-export async function startSubscriptionCheckout(planSlug: string): Promise<string> {
+export type CheckoutGateway = "stripe" | "paypal";
+
+export async function startSubscriptionCheckout(
+  planSlug: string,
+  gateway: CheckoutGateway = "stripe",
+): Promise<string> {
   const response = await apiFetch<{ url: string }>("checkout/subscriptions", {
     method: "POST",
-    body: JSON.stringify({ plan_slug: planSlug }),
+    body: JSON.stringify({ plan_slug: planSlug, gateway }),
   });
   return response.url;
 }

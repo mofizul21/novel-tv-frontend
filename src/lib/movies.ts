@@ -20,6 +20,8 @@ export type Movie = {
   poster_url: string | null;
   backdrop_url: string | null;
   trailer_url: string | null;
+  mux_playback_id: string | null;
+  mux_playback_policy: "public" | "signed" | null;
   is_featured: boolean;
   is_ppv: boolean;
   ppv_price: number | null;
@@ -56,4 +58,13 @@ export async function fetchMovieBySlug(slug: string): Promise<Movie> {
  */
 export async function fetchMovieAccess(slug: string): Promise<ContentAccess> {
   return apiFetch<ContentAccess>(`movies/${encodeURIComponent(slug)}/access`);
+}
+
+/**
+ * A short-lived signed playback token for a movie with mux_playback_policy
+ * "signed". Only call this once access has already been confirmed.
+ */
+export async function fetchMoviePlaybackToken(movieId: number): Promise<string | null> {
+  const response = await apiFetch<{ token: string | null }>(`movies/${movieId}/playback-token`);
+  return response.token;
 }

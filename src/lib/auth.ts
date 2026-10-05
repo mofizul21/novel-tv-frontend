@@ -54,3 +54,14 @@ export async function fetchCurrentUser(): Promise<AuthUser> {
 
   return response.data;
 }
+
+export async function changePassword(input: {
+  current_password: string;
+  password: string;
+  password_confirmation: string;
+}): Promise<void> {
+  await apiFetch("auth/change-password", {
+    method: "PUT",
+    body: JSON.stringify(input),
+  });
+}

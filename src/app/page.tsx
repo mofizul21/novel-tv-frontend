@@ -29,6 +29,9 @@ import {
 } from "@/lib/demo-data";
 import { useAuth } from "@/lib/auth-context";
 import { fetchWatchHistory, type WatchHistoryEntry } from "@/lib/watch-history";
+import { fetchRecommendations } from "@/lib/recommendations";
+import type { SearchResult } from "@/lib/search";
+import { PosterCard } from "@/components/PosterCard";
 
 const devices = [
   { label: "Smart TV", icon: Tv },
@@ -60,6 +63,7 @@ export default function HomePage() {
   const [activeCategory, setActiveCategory] = useState(channelCategories[0]);
   const { user } = useAuth();
   const [watchHistory, setWatchHistory] = useState<WatchHistoryEntry[]>([]);
+  const [recommendations, setRecommendations] = useState<SearchResult[]>([]);
 
   useEffect(() => {
     if (!user) return;
@@ -80,7 +84,27 @@ export default function HomePage() {
     };
   }, [user]);
 
+  useEffect(() => {
+    if (!user) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const response = await fetchRecommendations();
+        if (!cancelled) setRecommendations(response.data);
+      } catch {
+        if (!cancelled) setRecommendations([]);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
   const continueWatching = user ? watchHistory : [];
+  const recommended = user ? recommendations : [];
 
   return (
     <>
@@ -213,6 +237,31 @@ export default function HomePage() {
         </section>
       )}
       {/* ================= Continue Watching Section: End ================= */}
+
+      {/* =================== Recommended For You Section: Start =================== */}
+      {recommended.length > 0 && (
+        <section className="mx-auto max-w-360 px-4 py-8 sm:px-6 lg:px-10">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-ui text-xl font-semibold text-text-primary sm:text-2xl">
+              Recommended For You
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+            {recommended.map((item) => (
+              <PosterCard
+                key={`${item.type}-${item.id}`}
+                href={item.type === "movie" ? `/movies/${item.slug}` : `/series/${item.slug}`}
+                title={item.title}
+                posterUrl={item.poster_url}
+                subtitle={item.year ? String(item.year) : undefined}
+                topLeftBadge={item.is_ppv ? "PPV" : undefined}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+      {/* ==================== Recommended For You Section: End ==================== */}
 
       {/* ================== Live TV Channels Section: Start ================== */}
       <section className="mx-auto max-w-360 px-4 py-8 sm:px-6 lg:px-10">

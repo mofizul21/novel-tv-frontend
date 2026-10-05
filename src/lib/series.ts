@@ -78,3 +78,13 @@ export async function fetchSeriesBySlug(slug: string): Promise<Series> {
 export async function fetchSeriesAccess(slug: string): Promise<ContentAccess> {
   return apiFetch<ContentAccess>(`series/${encodeURIComponent(slug)}/access`);
 }
+
+/**
+ * A short-lived signed playback token for an episode with mux_playback_policy
+ * "signed". Only call this once access has already been confirmed — the
+ * backend re-checks entitlement anyway, but there's no point fetching early.
+ */
+export async function fetchEpisodePlaybackToken(episodeId: number): Promise<string | null> {
+  const response = await apiFetch<{ token: string | null }>(`episodes/${episodeId}/playback-token`);
+  return response.token;
+}
