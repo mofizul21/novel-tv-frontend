@@ -42,6 +42,7 @@ export type Series = {
   backdrop_url: string | null;
   trailer_url: string | null;
   is_featured: boolean;
+  is_original: boolean;
   is_ppv: boolean;
   ppv_price: number | null;
   published_at: string | null;
@@ -54,11 +55,12 @@ export type Series = {
 };
 
 export async function fetchSeriesList(
-  params: { genre?: string; featured?: boolean; perPage?: number } = {},
+  params: { genre?: string; featured?: boolean; original?: boolean; perPage?: number } = {},
 ): Promise<Series[]> {
   const search = new URLSearchParams();
   if (params.genre) search.set("genre", params.genre);
   if (params.featured) search.set("featured", "1");
+  if (params.original) search.set("original", "1");
   if (params.perPage) search.set("per_page", String(params.perPage));
 
   const qs = search.toString();

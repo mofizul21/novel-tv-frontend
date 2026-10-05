@@ -1,25 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   Play,
-  ChevronRight,
-  Crown,
   Clapperboard,
   Tv,
   Home as HomeIcon,
   Radio,
   Bookmark,
+  Loader2,
 } from "lucide-react";
-import {
-  originalsFilters,
-  novelOriginals,
-  comingSoonOriginals,
-  type OriginalItem,
-} from "@/lib/demo-data";
+import { fetchMovies, type Movie } from "@/lib/movies";
+import { fetchSeriesList, type Series } from "@/lib/series";
+import { PosterCard } from "@/components/PosterCard";
+
+const originalsFilters = ["All", "Series", "Movies"] as const;
 
 const bottomNavItems = [
   { label: "Home", href: "/", icon: HomeIcon },
@@ -29,41 +27,57 @@ const bottomNavItems = [
   { label: "My List", href: "/my-list", icon: Bookmark },
 ];
 
-function OriginalCard({ item }: { item: OriginalItem }) {
-  return (
-    <div className="relative aspect-2/3 overflow-hidden rounded-md border border-border bg-surface">
-      <span
-        className={`absolute left-2 top-2 z-10 flex items-center gap-1 rounded px-2 py-0.5 font-ui text-[10px] font-bold uppercase tracking-wide text-text-primary ${
-          item.tag === "Exclusive" ? "bg-primary" : "bg-surface-hover"
-        }`}
-      >
-        {item.tag === "Exclusive" && <Crown size={10} />}
-        {item.tag}
-      </span>
-      <Image
-        src="/images/movie-poster.png"
-        alt=""
-        fill
-        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-        className="object-cover"
-      />
-      <div className="absolute inset-0 bg-linear-to-t from-black via-black/40 to-transparent" />
-
-      <div className="absolute inset-x-0 bottom-0 p-3">
-        <p className="line-clamp-1 font-ui text-sm font-semibold text-text-primary">
-          {item.title}
-        </p>
-        <p className="mt-0.5 font-body text-xs text-text-secondary">
-          {item.type} · {item.meta}
-        </p>
-      </div>
-    </div>
-  );
-}
+type OriginalEntry = { type: "movie"; item: Movie } | { type: "series"; item: Series };
 
 export default function OriginalsPage() {
   const pathname = usePathname();
-  const [activeFilter, setActiveFilter] = useState(originalsFilters[0]);
+  const [activeFilter, setActiveFilter] = useState<(typeof originalsFilters)[number]>("All");
+
+  const [originalMovies, setOriginalMovies] = useState<Movie[]>([]);
+  const [originalSeries, setOriginalSeries] = useState<Series[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      setIsLoading(true);
+      try {
+        const [movies, series] = await Promise.all([
+          fetchMovies({ original: true, perPage: 20 }),
+          fetchSeriesList({ original: true, perPage: 20 }),
+        ]);
+        if (!cancelled) {
+          setOriginalMovies(movies);
+          setOriginalSeries(series);
+        }
+      } catch {
+        if (!cancelled) {
+          setOriginalMovies([]);
+          setOriginalSeries([]);
+        }
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const entries: OriginalEntry[] = [
+    ...originalMovies.map((item): OriginalEntry => ({ type: "movie", item })),
+    ...originalSeries.map((item): OriginalEntry => ({ type: "series", item })),
+  ];
+
+  const visibleEntries = entries.filter((entry) => {
+    if (activeFilter === "All") return true;
+    if (activeFilter === "Movies") return entry.type === "movie";
+    return entry.type === "series";
+  });
+
+  const heroEntry = entries[0];
 
   return (
     <>
@@ -102,13 +116,33 @@ export default function OriginalsPage() {
               </p>
 
               <div className="mt-7 flex flex-wrap items-center gap-4">
-                <button className="flex items-center gap-2 rounded-md bg-primary px-6 py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary shadow-primary transition-colors duration-150 hover:bg-accent">
-                  <Play size={18} fill="currentColor" />
-                  Watch Now
-                </button>
-                <button className="rounded-md border border-text-primary px-6 py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary transition-colors duration-150 hover:border-primary hover:bg-primary">
+                {heroEntry ? (
+                  <Link
+                    href={
+                      heroEntry.type === "movie"
+                        ? `/movies/${heroEntry.item.slug}`
+                        : `/series/${heroEntry.item.slug}`
+                    }
+                    className="flex items-center gap-2 rounded-md bg-primary px-6 py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary shadow-primary transition-colors duration-150 hover:bg-accent"
+                  >
+                    <Play size={18} fill="currentColor" />
+                    Watch Now
+                  </Link>
+                ) : (
+                  <a
+                    href="#originals-catalog"
+                    className="flex items-center gap-2 rounded-md bg-primary px-6 py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary shadow-primary transition-colors duration-150 hover:bg-accent"
+                  >
+                    <Play size={18} fill="currentColor" />
+                    Watch Now
+                  </a>
+                )}
+                <a
+                  href="#originals-catalog"
+                  className="rounded-md border border-text-primary px-6 py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary transition-colors duration-150 hover:border-primary hover:bg-primary"
+                >
                   Browse All
-                </button>
+                </a>
               </div>
             </div>
 
@@ -135,50 +169,37 @@ export default function OriginalsPage() {
         {/* ====================== Hero Section: End ====================== */}
 
         {/* =================== Novel TV Originals Section: Start =================== */}
-        <section className="mx-auto max-w-360 px-4 py-8 sm:px-6 lg:px-10">
+        <section id="originals-catalog" className="mx-auto max-w-360 px-4 py-8 sm:px-6 lg:px-10">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-ui text-xl font-semibold text-text-primary sm:text-2xl">
               Novel TV Originals
             </h2>
-            <a
-              href="#"
-              className="flex items-center gap-1 font-ui text-sm font-medium text-primary transition-colors duration-150 hover:text-accent"
-            >
-              View All
-              <ChevronRight size={16} />
-            </a>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-            {novelOriginals.map((item) => (
-              <OriginalCard key={item.id} item={item} />
-            ))}
-          </div>
+          {isLoading ? (
+            <div className="flex justify-center py-16">
+              <Loader2 size={20} className="animate-spin text-text-secondary" />
+            </div>
+          ) : visibleEntries.length === 0 ? (
+            <p className="py-10 text-center font-body text-sm text-text-secondary">
+              No originals in this category yet.
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+              {visibleEntries.map((entry) => (
+                <PosterCard
+                  key={`${entry.type}-${entry.item.id}`}
+                  href={entry.type === "movie" ? `/movies/${entry.item.slug}` : `/series/${entry.item.slug}`}
+                  title={entry.item.title}
+                  posterUrl={entry.item.poster_url}
+                  subtitle={entry.type === "movie" ? "Film" : "Series"}
+                  topLeftBadge="Original"
+                />
+              ))}
+            </div>
+          )}
         </section>
         {/* ==================== Novel TV Originals Section: End ==================== */}
-
-        {/* ====================== Coming Soon Section: Start ====================== */}
-        <section className="mx-auto max-w-360 px-4 py-8 sm:px-6 lg:px-10">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-ui text-xl font-semibold text-text-primary sm:text-2xl">
-              Coming Soon
-            </h2>
-            <a
-              href="#"
-              className="flex items-center gap-1 font-ui text-sm font-medium text-primary transition-colors duration-150 hover:text-accent"
-            >
-              View All
-              <ChevronRight size={16} />
-            </a>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-            {comingSoonOriginals.map((item) => (
-              <OriginalCard key={item.id} item={item} />
-            ))}
-          </div>
-        </section>
-        {/* ======================= Coming Soon Section: End ======================= */}
       </div>
 
       {/* Mobile app-style bottom nav — page-scoped for now; move into the

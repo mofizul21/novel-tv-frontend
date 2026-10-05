@@ -23,6 +23,7 @@ export type Movie = {
   mux_playback_id: string | null;
   mux_playback_policy: "public" | "signed" | null;
   is_featured: boolean;
+  is_original: boolean;
   is_ppv: boolean;
   ppv_price: number | null;
   published_at: string | null;
@@ -34,11 +35,12 @@ export type Movie = {
 };
 
 export async function fetchMovies(
-  params: { genre?: string; featured?: boolean; perPage?: number } = {},
+  params: { genre?: string; featured?: boolean; original?: boolean; perPage?: number } = {},
 ): Promise<Movie[]> {
   const search = new URLSearchParams();
   if (params.genre) search.set("genre", params.genre);
   if (params.featured) search.set("featured", "1");
+  if (params.original) search.set("original", "1");
   if (params.perPage) search.set("per_page", String(params.perPage));
 
   const qs = search.toString();
