@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Bebas_Neue, Roboto_Condensed, Roboto, Permanent_Marker } from "next/font/google";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { EmailVerificationBanner } from "@/components/layout/EmailVerificationBanner";
 import { AuthProvider } from "@/lib/auth-context";
 import { FavoritesProvider } from "@/lib/favorites-context";
 import "./globals.css";
@@ -51,6 +52,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <AuthProvider>
           <FavoritesProvider>
             <Header />
+            <EmailVerificationBanner />
             <main className="flex-1">{children}</main>
             <Footer />
           </FavoritesProvider>

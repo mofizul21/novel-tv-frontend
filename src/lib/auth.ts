@@ -55,6 +55,10 @@ export async function fetchCurrentUser(): Promise<AuthUser> {
   return response.data;
 }
 
+export async function resendVerificationEmail(): Promise<void> {
+  await apiFetch("auth/email/verification-notification", { method: "POST" });
+}
+
 export async function changePassword(input: {
   current_password: string;
   password: string;
