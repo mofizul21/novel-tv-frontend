@@ -7,6 +7,7 @@ import type {
   Genre,
   Language,
   PaginatedResponse,
+  PlaybackTokens,
 } from "./catalog-types";
 
 export type Movie = {
@@ -63,10 +64,18 @@ export async function fetchMovieAccess(slug: string): Promise<ContentAccess> {
 }
 
 /**
- * A short-lived signed playback token for a movie with mux_playback_policy
- * "signed". Only call this once access has already been confirmed.
+ * Short-lived signed playback tokens for a movie with mux_playback_policy
+ * "signed" — Mux Player needs a separate token for the video, poster
+ * thumbnail, and storyboard preview. Only call this once access has already
+ * been confirmed.
  */
-export async function fetchMoviePlaybackToken(movieId: number): Promise<string | null> {
-  const response = await apiFetch<{ token: string | null }>(`movies/${movieId}/playback-token`);
-  return response.token;
+export async function fetchMoviePlaybackToken(movieId: number): Promise<PlaybackTokens> {
+  const response = await apiFetch<{ token: string | null; thumbnail_token: string | null; storyboard_token: string | null }>(
+    `movies/${movieId}/playback-token`,
+  );
+  return {
+    token: response.token,
+    thumbnailToken: response.thumbnail_token,
+    storyboardToken: response.storyboard_token,
+  };
 }

@@ -1,3 +1,6 @@
+"use client";
+
+import MuxPlayer from "@mux/mux-player-react";
 import Link from "next/link";
 import { Loader2, PlayCircle } from "lucide-react";
 
@@ -8,11 +11,15 @@ export type ContentPlayerProps = {
   muxPlaybackId?: string | null;
   muxPlaybackPolicy?: "public" | "signed" | null;
   /**
-   * Required when muxPlaybackPolicy is "signed" — a short-lived JWT from
-   * `GET /episodes/{id}/playback-token`. Pass `undefined` while it's still
-   * being fetched (shows a loader) and `null` if the fetch failed.
+   * Required when muxPlaybackPolicy is "signed" — short-lived JWTs from
+   * `GET /episodes/{id}/playback-token`, one per resource (Mux Player fetches
+   * the video, a poster thumbnail, and a storyboard preview separately, each
+   * needing its own audience-specific signature). Pass `undefined` while
+   * still fetching (shows a loader) and `null` if the fetch failed.
    */
   muxPlaybackToken?: string | null;
+  muxThumbnailToken?: string | null;
+  muxStoryboardToken?: string | null;
 };
 
 const demoYoutubeId = process.env.NEXT_PUBLIC_DEMO_VIDEO_YOUTUBE_ID?.trim() || null;
@@ -32,6 +39,8 @@ export function ContentPlayer({
   muxPlaybackId,
   muxPlaybackPolicy,
   muxPlaybackToken,
+  muxThumbnailToken,
+  muxStoryboardToken,
 }: ContentPlayerProps) {
   if (!canWatch) {
     return (
@@ -69,11 +78,15 @@ export function ContentPlayer({
     }
 
     return (
-      <iframe
-        src={`https://player.mux.com/${muxPlaybackId}?token=${muxPlaybackToken}&metadata-video-title=${encodeURIComponent(videoTitle)}`}
-        style={{ width: "100%", height: "100%", border: "none" }}
-        allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
-        allowFullScreen
+      <MuxPlayer
+        playbackId={muxPlaybackId}
+        tokens={{
+          playback: muxPlaybackToken,
+          thumbnail: muxThumbnailToken ?? undefined,
+          storyboard: muxStoryboardToken ?? undefined,
+        }}
+        videoTitle={videoTitle}
+        style={{ width: "100%", height: "100%" }}
       />
     );
   }

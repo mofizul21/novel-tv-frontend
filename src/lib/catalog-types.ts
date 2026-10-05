@@ -27,3 +27,9 @@ export type ContentAccess = {
   can_watch: boolean;
   reason: "subscribed" | "ppv_purchased" | "requires_subscription" | "requires_ppv";
 };
+
+export type PlaybackTokens = {
+  token: string | null;
+  thumbnailToken: string | null;
+  storyboardToken: string | null;
+};

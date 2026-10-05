@@ -10,7 +10,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useFavorites } from "@/lib/favorites-context";
 import { recordProgress } from "@/lib/watch-history";
 import { ContentPlayer } from "@/components/ContentPlayer";
-import type { ContentAccess } from "@/lib/catalog-types";
+import type { ContentAccess, PlaybackTokens } from "@/lib/catalog-types";
 
 export default function EpisodeDetailPage({
   params,
@@ -28,7 +28,7 @@ export default function EpisodeDetailPage({
   const [error, setError] = useState<string | null>(null);
   const [access, setAccess] = useState<ContentAccess | null>(null);
   const [watchedProgress, setWatchedProgress] = useState<number | null>(null);
-  const [playbackToken, setPlaybackToken] = useState<string | null | undefined>(undefined);
+  const [playbackTokens, setPlaybackTokens] = useState<PlaybackTokens | null | undefined>(undefined);
   const recordedEpisodeId = useRef<number | null>(null);
 
   useEffect(() => {
@@ -102,10 +102,10 @@ export default function EpisodeDetailPage({
 
     (async () => {
       try {
-        const token = await fetchEpisodePlaybackToken(episode.id);
-        if (!cancelled) setPlaybackToken(token);
+        const tokens = await fetchEpisodePlaybackToken(episode.id);
+        if (!cancelled) setPlaybackTokens(tokens);
       } catch {
-        if (!cancelled) setPlaybackToken(null);
+        if (!cancelled) setPlaybackTokens(null);
       }
     })();
 
@@ -165,7 +165,9 @@ export default function EpisodeDetailPage({
                 videoTitle={`${series.title} S${season.number}E${episode.number} ${episode.title}`}
                 muxPlaybackId={episode.mux_playback_id}
                 muxPlaybackPolicy={episode.mux_playback_policy}
-                muxPlaybackToken={playbackToken}
+                muxPlaybackToken={playbackTokens === null ? null : playbackTokens?.token}
+                muxThumbnailToken={playbackTokens?.thumbnailToken}
+                muxStoryboardToken={playbackTokens?.storyboardToken}
               />
             </div>
 

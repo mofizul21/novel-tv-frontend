@@ -9,7 +9,7 @@ import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useFavorites } from "@/lib/favorites-context";
 import { ContentPlayer } from "@/components/ContentPlayer";
-import type { ContentAccess } from "@/lib/catalog-types";
+import type { ContentAccess, PlaybackTokens } from "@/lib/catalog-types";
 
 export default function MovieDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
@@ -20,7 +20,7 @@ export default function MovieDetailPage({ params }: { params: Promise<{ slug: st
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [access, setAccess] = useState<ContentAccess | null>(null);
-  const [playbackToken, setPlaybackToken] = useState<string | null | undefined>(undefined);
+  const [playbackTokens, setPlaybackTokens] = useState<PlaybackTokens | null | undefined>(undefined);
 
   useEffect(() => {
     let cancelled = false;
@@ -77,10 +77,10 @@ export default function MovieDetailPage({ params }: { params: Promise<{ slug: st
 
     (async () => {
       try {
-        const token = await fetchMoviePlaybackToken(movie.id);
-        if (!cancelled) setPlaybackToken(token);
+        const tokens = await fetchMoviePlaybackToken(movie.id);
+        if (!cancelled) setPlaybackTokens(tokens);
       } catch {
-        if (!cancelled) setPlaybackToken(null);
+        if (!cancelled) setPlaybackTokens(null);
       }
     })();
 
@@ -236,7 +236,9 @@ export default function MovieDetailPage({ params }: { params: Promise<{ slug: st
             videoTitle={movie.title}
             muxPlaybackId={movie.mux_playback_id}
             muxPlaybackPolicy={movie.mux_playback_policy}
-            muxPlaybackToken={playbackToken}
+            muxPlaybackToken={playbackTokens === null ? null : playbackTokens?.token}
+            muxThumbnailToken={playbackTokens?.thumbnailToken}
+            muxStoryboardToken={playbackTokens?.storyboardToken}
           />
         </div>
       </div>
