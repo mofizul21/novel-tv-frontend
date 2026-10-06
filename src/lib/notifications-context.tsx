@@ -7,6 +7,7 @@ import {
   fetchUnreadNotificationCount,
   markAllNotificationsRead,
   markNotificationRead,
+  markNotificationUnread,
   type AppNotification,
 } from "./notifications";
 
@@ -16,6 +17,8 @@ type NotificationsContextValue = {
   isLoading: boolean;
   refresh: () => Promise<void>;
   markRead: (id: string) => Promise<void>;
+  markUnread: (id: string) => Promise<void>;
+  toggleRead: (id: string) => Promise<void>;
   markAllRead: () => Promise<void>;
 };
 
@@ -65,6 +68,27 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     }
   }
 
+  async function markUnread(id: string): Promise<void> {
+    const target = notifications.find((n) => n.id === id);
+    if (!target || !target.read) return;
+
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: false } : n)));
+    setUnreadCount((prev) => prev + 1);
+
+    try {
+      await markNotificationUnread(id);
+    } catch {
+      // Non-critical — the next full refresh will self-correct.
+    }
+  }
+
+  async function toggleRead(id: string): Promise<void> {
+    const target = notifications.find((n) => n.id === id);
+    if (!target) return;
+
+    await (target.read ? markUnread(id) : markRead(id));
+  }
+
   async function markAllRead(): Promise<void> {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     setUnreadCount(0);
@@ -88,6 +112,8 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
         isLoading,
         refresh,
         markRead,
+        markUnread,
+        toggleRead,
         markAllRead,
       }}
     >

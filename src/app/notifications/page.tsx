@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, BellOff, Loader2, CheckCheck } from "lucide-react";
+import { Bell, BellOff, Loader2, CheckCheck, Circle, CircleCheck } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useNotifications } from "@/lib/notifications-context";
 
@@ -22,7 +22,7 @@ function timeAgo(iso: string | null): string {
 export default function NotificationsPage() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
-  const { notifications, isLoading, markRead, markAllRead } = useNotifications();
+  const { notifications, isLoading, toggleRead, markAllRead } = useNotifications();
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -73,18 +73,26 @@ export default function NotificationsPage() {
         ) : (
           <div className="mt-10 space-y-2">
             {notifications.map((notification) => (
-              <button
+              <div
                 key={notification.id}
-                onClick={() => !notification.read && markRead(notification.id)}
                 className={`flex w-full items-start gap-3 rounded-md border px-4 py-3 text-left transition-colors duration-150 ${
                   notification.read
                     ? "border-border bg-surface"
-                    : "border-primary/40 bg-primary/5 hover:bg-primary/10"
+                    : "border-primary/40 bg-primary/5"
                 }`}
               >
-                {!notification.read && (
-                  <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />
-                )}
+                <button
+                  onClick={() => toggleRead(notification.id)}
+                  aria-label={notification.read ? "Mark as unread" : "Mark as read"}
+                  title={notification.read ? "Mark as unread" : "Mark as read"}
+                  className="mt-0.5 shrink-0 text-text-muted transition-colors duration-150 hover:text-primary"
+                >
+                  {notification.read ? (
+                    <CircleCheck size={18} className="text-text-muted" />
+                  ) : (
+                    <Circle size={18} className="fill-primary text-primary" />
+                  )}
+                </button>
                 <div className="min-w-0 flex-1">
                   <p className="font-ui text-sm font-semibold text-text-primary">
                     {notification.title ?? "Notification"}
@@ -94,7 +102,7 @@ export default function NotificationsPage() {
                   )}
                   <p className="mt-1 font-body text-xs text-text-muted">{timeAgo(notification.created_at)}</p>
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         )}

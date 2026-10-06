@@ -23,6 +23,10 @@ export async function markNotificationRead(id: string): Promise<void> {
   await apiFetch(`notifications/${id}/read`, { method: "PUT" });
 }
 
+export async function markNotificationUnread(id: string): Promise<void> {
+  await apiFetch(`notifications/${id}/unread`, { method: "PUT" });
+}
+
 export async function markAllNotificationsRead(): Promise<void> {
   await apiFetch("notifications/read-all", { method: "PUT" });
 }
