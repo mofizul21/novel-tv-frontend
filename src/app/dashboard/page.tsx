@@ -3,19 +3,47 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { LogOut, Mail, User as UserIcon, CalendarDays, KeyRound } from "lucide-react";
+import { LogOut, Mail, User as UserIcon, CalendarDays, KeyRound, CreditCard } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { fetchCurrentSubscription, type CurrentSubscription } from "@/lib/subscriptions";
+
+const STATUS_LABELS: Record<CurrentSubscription["status"], string> = {
+  trialing: "Free trial",
+  active: "Active",
+  past_due: "Past due",
+  canceled: "Canceled",
+  expired: "Expired",
+};
 
 export default function DashboardPage() {
   const router = useRouter();
   const { user, isLoading, logout } = useAuth();
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [subscription, setSubscription] = useState<CurrentSubscription | null | undefined>(undefined);
 
   useEffect(() => {
     if (!isLoading && !user) {
       router.replace("/login");
     }
   }, [isLoading, user, router]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    let cancelled = false;
+
+    fetchCurrentSubscription()
+      .then((data) => {
+        if (!cancelled) setSubscription(data);
+      })
+      .catch(() => {
+        if (!cancelled) setSubscription(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   async function handleSignOut() {
     setIsSigningOut(true);
@@ -78,9 +106,62 @@ export default function DashboardPage() {
             </div>
           </dl>
 
-          <p className="mt-6 font-body text-xs text-text-muted">
-            Subscription and billing history will show up here soon.
-          </p>
+          <div className="mt-6 border-t border-border pt-6">
+            <p className="font-ui text-xs font-bold uppercase tracking-wide text-text-muted">
+              Subscription
+            </p>
+
+            {subscription === undefined ? (
+              <p className="mt-2 font-body text-sm text-text-secondary">Loading…</p>
+            ) : subscription === null ? (
+              <div className="mt-2 flex items-center justify-between gap-3">
+                <p className="font-body text-sm text-text-secondary">You&apos;re not subscribed yet.</p>
+                <Link
+                  href="/pricing"
+                  className="shrink-0 font-ui text-sm font-semibold text-primary hover:text-accent"
+                >
+                  View Plans
+                </Link>
+              </div>
+            ) : (
+              <div className="mt-2">
+                <div className="flex items-center gap-2">
+                  <CreditCard size={16} className="text-text-muted" />
+                  <p className="font-body text-sm text-text-primary">
+                    {subscription.plan.name} — ${subscription.plan.price.toFixed(2)}/
+                    {subscription.plan.billing_interval === "yearly" ? "year" : "month"}
+                  </p>
+                  <span className="rounded-full bg-primary/15 px-2 py-0.5 font-ui text-xs font-bold uppercase tracking-wide text-primary">
+                    {STATUS_LABELS[subscription.status]}
+                  </span>
+                </div>
+
+                {subscription.status === "trialing" && subscription.trial_ends_at && (
+                  <p className="mt-1.5 font-body text-xs text-text-secondary">
+                    Trial ends {new Date(subscription.trial_ends_at).toLocaleDateString()}
+                  </p>
+                )}
+                {subscription.status !== "trialing" && subscription.current_period_ends_at && (
+                  <p className="mt-1.5 font-body text-xs text-text-secondary">
+                    Renews {new Date(subscription.current_period_ends_at).toLocaleDateString()}
+                  </p>
+                )}
+                {subscription.pending_plan && subscription.current_period_ends_at && (
+                  <p className="mt-1.5 font-body text-xs text-text-secondary">
+                    Switching to {subscription.pending_plan.name} on{" "}
+                    {new Date(subscription.current_period_ends_at).toLocaleDateString()}
+                  </p>
+                )}
+
+                <Link
+                  href="/pricing"
+                  className="mt-3 inline-block font-ui text-sm font-semibold text-primary hover:text-accent"
+                >
+                  Manage Plan
+                </Link>
+              </div>
+            )}
+          </div>
 
           <Link
             href="/dashboard/change-password"
