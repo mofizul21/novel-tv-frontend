@@ -73,26 +73,24 @@ export default function NotificationsPage() {
         ) : (
           <div className="mt-10 space-y-2">
             {notifications.map((notification) => (
-              <div
+              <button
                 key={notification.id}
+                onClick={() => toggleRead(notification.id)}
+                aria-label={notification.read ? "Mark as unread" : "Mark as read"}
+                title={notification.read ? "Mark as unread" : "Mark as read"}
                 className={`flex w-full items-start gap-3 rounded-md border px-4 py-3 text-left transition-colors duration-150 ${
                   notification.read
-                    ? "border-border bg-surface"
-                    : "border-primary/40 bg-primary/5"
+                    ? "border-border bg-surface hover:bg-surface-hover"
+                    : "border-primary/40 bg-primary/5 hover:bg-primary/10"
                 }`}
               >
-                <button
-                  onClick={() => toggleRead(notification.id)}
-                  aria-label={notification.read ? "Mark as unread" : "Mark as read"}
-                  title={notification.read ? "Mark as unread" : "Mark as read"}
-                  className="mt-0.5 shrink-0 text-text-muted transition-colors duration-150 hover:text-primary"
-                >
+                <span className="mt-0.5 shrink-0 text-text-muted">
                   {notification.read ? (
                     <CircleCheck size={18} className="text-text-muted" />
                   ) : (
                     <Circle size={18} className="fill-primary text-primary" />
                   )}
-                </button>
+                </span>
                 <div className="min-w-0 flex-1">
                   <p className="font-ui text-sm font-semibold text-text-primary">
                     {notification.title ?? "Notification"}
@@ -102,7 +100,7 @@ export default function NotificationsPage() {
                   )}
                   <p className="mt-1 font-body text-xs text-text-muted">{timeAgo(notification.created_at)}</p>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         )}
