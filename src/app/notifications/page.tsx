@@ -1,15 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Bell, BellOff, Loader2, CheckCheck } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import {
-  fetchNotifications,
-  markAllNotificationsRead,
-  markNotificationRead,
-  type AppNotification,
-} from "@/lib/notifications";
+import { useNotifications } from "@/lib/notifications-context";
 
 function timeAgo(iso: string | null): string {
   if (!iso) return "";
@@ -27,55 +22,13 @@ function timeAgo(iso: string | null): string {
 export default function NotificationsPage() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
-
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { notifications, isLoading, markRead, markAllRead } = useNotifications();
 
   useEffect(() => {
     if (!authLoading && !user) {
       router.replace("/login");
     }
   }, [authLoading, user, router]);
-
-  useEffect(() => {
-    if (!user) return;
-
-    let cancelled = false;
-
-    (async () => {
-      setIsLoading(true);
-      try {
-        const data = await fetchNotifications();
-        if (!cancelled) setNotifications(data);
-      } catch {
-        if (!cancelled) setNotifications([]);
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
-
-  async function handleMarkRead(id: string) {
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
-    try {
-      await markNotificationRead(id);
-    } catch {
-      // Non-critical — the list will self-correct on next load.
-    }
-  }
-
-  async function handleMarkAllRead() {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    try {
-      await markAllNotificationsRead();
-    } catch {
-      // Non-critical.
-    }
-  }
 
   const hasUnread = notifications.some((n) => !n.read);
 
@@ -99,7 +52,7 @@ export default function NotificationsPage() {
           </div>
           {hasUnread && (
             <button
-              onClick={handleMarkAllRead}
+              onClick={markAllRead}
               className="flex items-center gap-1.5 rounded-md border border-border-light px-3 py-2 font-ui text-xs font-semibold uppercase tracking-wide text-text-secondary transition-colors duration-150 hover:bg-surface-hover hover:text-text-primary"
             >
               <CheckCheck size={14} />
@@ -122,7 +75,7 @@ export default function NotificationsPage() {
             {notifications.map((notification) => (
               <button
                 key={notification.id}
-                onClick={() => !notification.read && handleMarkRead(notification.id)}
+                onClick={() => !notification.read && markRead(notification.id)}
                 className={`flex w-full items-start gap-3 rounded-md border px-4 py-3 text-left transition-colors duration-150 ${
                   notification.read
                     ? "border-border bg-surface"

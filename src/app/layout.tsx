@@ -5,6 +5,7 @@ import { Footer } from "@/components/layout/Footer";
 import { EmailVerificationBanner } from "@/components/layout/EmailVerificationBanner";
 import { AuthProvider } from "@/lib/auth-context";
 import { FavoritesProvider } from "@/lib/favorites-context";
+import { NotificationsProvider } from "@/lib/notifications-context";
 import "./globals.css";
 
 const fontHeading = Bebas_Neue({
@@ -51,10 +52,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col bg-background text-text-primary font-body">
         <AuthProvider>
           <FavoritesProvider>
-            <Header />
-            <EmailVerificationBanner />
-            <main className="flex-1">{children}</main>
-            <Footer />
+            <NotificationsProvider>
+              <Header />
+              <EmailVerificationBanner />
+              <main className="flex-1">{children}</main>
+              <Footer />
+            </NotificationsProvider>
           </FavoritesProvider>
         </AuthProvider>
       </body>

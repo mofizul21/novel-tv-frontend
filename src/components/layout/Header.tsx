@@ -8,7 +8,7 @@ import { Search, UserCircle2, Menu, X, Film, Tv as TvIcon, Loader2, Bell } from 
 import { mainNavLinks } from "@/lib/demo-data";
 import { useAuth } from "@/lib/auth-context";
 import { searchCatalog, type SearchResult } from "@/lib/search";
-import { fetchUnreadNotificationCount } from "@/lib/notifications";
+import { useNotifications } from "@/lib/notifications-context";
 
 export function Header() {
   const pathname = usePathname();
@@ -19,27 +19,8 @@ export function Header() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const { unreadCount } = useNotifications();
   const searchInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (!user) return;
-
-    let cancelled = false;
-
-    (async () => {
-      try {
-        const count = await fetchUnreadNotificationCount();
-        if (!cancelled) setUnreadCount(count);
-      } catch {
-        if (!cancelled) setUnreadCount(0);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
 
   useEffect(() => {
     if (searchOpen) searchInputRef.current?.focus();
