@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -60,10 +61,20 @@ const appFeatures = [
 ];
 
 export default function HomePage() {
+  return (
+    <Suspense fallback={null}>
+      <HomeContent />
+    </Suspense>
+  );
+}
+
+function HomeContent() {
   const [activeCategory, setActiveCategory] = useState(channelCategories[0]);
   const { user } = useAuth();
   const [watchHistory, setWatchHistory] = useState<WatchHistoryEntry[]>([]);
   const [recommendations, setRecommendations] = useState<SearchResult[]>([]);
+  const searchParams = useSearchParams();
+  const accountDeleted = searchParams.get("account_deleted") === "1";
 
   useEffect(() => {
     if (!user) return;
@@ -108,6 +119,15 @@ export default function HomePage() {
 
   return (
     <>
+      {accountDeleted && (
+        <div className="mx-auto max-w-360 px-4 pt-4 sm:px-6 lg:px-10">
+          <p className="rounded-md border border-success/30 bg-success/10 px-3 py-2 font-body text-sm text-success">
+            Your account deletion request has been received. You&apos;ll get a confirmation email
+            shortly.
+          </p>
+        </div>
+      )}
+
       {/* ===================== Hero Section: Start ===================== */}
       <section className="relative isolate min-h-115 overflow-hidden bg-background sm:min-h-125">
         <div className="absolute inset-0 -z-10">

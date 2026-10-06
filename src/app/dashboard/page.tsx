@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { LogOut, Mail, User as UserIcon, CalendarDays, KeyRound, CreditCard } from "lucide-react";
+import { LogOut, Mail, User as UserIcon, CalendarDays, KeyRound, CreditCard, AlertTriangle, X } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { fetchCurrentSubscription, type CurrentSubscription } from "@/lib/subscriptions";
+import { requestAccountDeletion } from "@/lib/account";
+import { ApiError } from "@/lib/api";
 
 const STATUS_LABELS: Record<CurrentSubscription["status"], string> = {
   trialing: "Free trial",
@@ -20,6 +22,9 @@ export default function DashboardPage() {
   const { user, isLoading, logout } = useAuth();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [subscription, setSubscription] = useState<CurrentSubscription | null | undefined>(undefined);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -51,6 +56,19 @@ export default function DashboardPage() {
       await logout();
     } finally {
       router.push("/");
+    }
+  }
+
+  async function handleConfirmDeletion() {
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      await requestAccountDeletion();
+      await logout();
+      router.push("/?account_deleted=1");
+    } catch (err) {
+      setDeleteError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
+      setIsDeleting(false);
     }
   }
 
@@ -180,7 +198,82 @@ export default function DashboardPage() {
             {isSigningOut ? "Signing Out..." : "Sign Out"}
           </button>
         </div>
+
+        <div className="mt-6 max-w-xl rounded-xl border border-error/30 bg-error/5 p-8">
+          <p className="font-ui text-xs font-bold uppercase tracking-wide text-error">
+            Danger Zone
+          </p>
+          <p className="mt-2 font-body text-sm text-text-secondary">
+            Permanently delete your account and all of your data. This cannot be undone after the
+            30-day grace period ends.
+          </p>
+          <button
+            onClick={() => setShowDeleteModal(true)}
+            className="mt-4 flex items-center gap-2 rounded-md border border-error/40 px-4 py-2 font-ui text-sm font-semibold text-error transition-colors duration-150 hover:bg-error/10"
+          >
+            <AlertTriangle size={16} />
+            Request Account Deletion
+          </button>
+        </div>
       </div>
+
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-md rounded-xl border border-border bg-surface p-6 shadow-md">
+            <div className="flex items-center justify-between">
+              <p className="flex items-center gap-2 font-ui text-base font-bold text-text-primary">
+                <AlertTriangle size={18} className="text-error" />
+                Delete your account?
+              </p>
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                disabled={isDeleting}
+                aria-label="Close"
+                className="text-text-muted hover:text-text-primary disabled:cursor-not-allowed"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <ul className="mt-4 list-disc space-y-2 pl-5 font-body text-sm text-text-secondary">
+              <li>Your account will be deactivated immediately and you&apos;ll be signed out.</li>
+              <li>Any active subscription will be canceled right away.</li>
+              <li>We&apos;ll send you a confirmation email.</li>
+              <li>
+                Changed your mind? Contact us through the{" "}
+                <Link href="/contact-us" className="font-semibold text-primary hover:text-accent">
+                  Contact page
+                </Link>{" "}
+                within 30 days and we&apos;ll reactivate your account.
+              </li>
+              <li>After 30 days, your account and all of its data are permanently deleted.</li>
+            </ul>
+
+            {deleteError && (
+              <p className="mt-4 rounded-md border border-error/30 bg-error/10 px-3 py-2 font-body text-sm text-error">
+                {deleteError}
+              </p>
+            )}
+
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                disabled={isDeleting}
+                className="flex-1 rounded-md border border-border-light bg-surface-light py-2.5 font-ui text-sm font-semibold text-text-primary transition-colors duration-150 hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDeletion}
+                disabled={isDeleting}
+                className="flex-1 rounded-md bg-error py-2.5 font-ui text-sm font-bold uppercase tracking-wide text-text-primary transition-colors duration-150 hover:bg-error/80 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isDeleting ? "Deleting..." : "Yes, Delete My Account"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
