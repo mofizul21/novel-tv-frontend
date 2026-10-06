@@ -1,4 +1,4 @@
-import { apiFetch, clearStoredToken, setStoredToken } from "./api";
+import { API_URL, apiFetch, clearStoredToken, setStoredToken } from "./api";
 
 export type AuthUser = {
   id: number;
@@ -34,6 +34,21 @@ export async function loginUser(input: { email: string; password: string }): Pro
   const response = await apiFetch<AuthResponse>("auth/login", {
     method: "POST",
     body: JSON.stringify(input),
+  });
+
+  setStoredToken(response.token);
+
+  return response.user;
+}
+
+export function getSocialLoginUrl(provider: "google" | "facebook"): string {
+  return `${API_URL}/auth/${provider}/redirect`;
+}
+
+export async function exchangeSocialLoginCode(code: string): Promise<AuthUser> {
+  const response = await apiFetch<AuthResponse>("auth/social/exchange", {
+    method: "POST",
+    body: JSON.stringify({ code }),
   });
 
   setStoredToken(response.token);

@@ -6,7 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { ApiError } from "@/lib/api";
-import { loginUser } from "@/lib/auth";
+import { getSocialLoginUrl, loginUser } from "@/lib/auth";
 import { useAuth } from "@/lib/auth-context";
 import { getSafeRedirectPath } from "@/lib/safe-redirect";
 
@@ -52,12 +52,15 @@ function LoginForm() {
   const justRegistered = searchParams.get("registered") === "1";
   const redirectParam = searchParams.get("redirect");
   const redirectTarget = getSafeRedirectPath(redirectParam);
+  const socialError = searchParams.get("social_error");
 
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    socialError === "not_configured" ? "Social sign-in isn't set up yet. Please sign in with email instead." : null,
+  );
 
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -187,11 +190,23 @@ function LoginForm() {
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <button className="flex items-center justify-center gap-2 rounded-md border border-border-light bg-surface-light py-2.5 font-ui text-sm font-semibold text-text-primary transition-colors duration-150 hover:bg-surface-hover">
+          <button
+            type="button"
+            onClick={() => {
+              window.location.assign(getSocialLoginUrl("google"));
+            }}
+            className="flex items-center justify-center gap-2 rounded-md border border-border-light bg-surface-light py-2.5 font-ui text-sm font-semibold text-text-primary transition-colors duration-150 hover:bg-surface-hover"
+          >
             <GoogleIcon />
             Google
           </button>
-          <button className="flex items-center justify-center gap-2 rounded-md border border-border-light bg-surface-light py-2.5 font-ui text-sm font-semibold text-text-primary transition-colors duration-150 hover:bg-surface-hover">
+          <button
+            type="button"
+            onClick={() => {
+              window.location.assign(getSocialLoginUrl("facebook"));
+            }}
+            className="flex items-center justify-center gap-2 rounded-md border border-border-light bg-surface-light py-2.5 font-ui text-sm font-semibold text-text-primary transition-colors duration-150 hover:bg-surface-hover"
+          >
             <FacebookIcon />
             Facebook
           </button>

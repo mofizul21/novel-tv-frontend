@@ -6,7 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { User, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { ApiError } from "@/lib/api";
-import { registerUser } from "@/lib/auth";
+import { getSocialLoginUrl, registerUser } from "@/lib/auth";
 
 function GoogleIcon() {
   return (
@@ -239,11 +239,23 @@ function RegisterForm() {
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <button className="flex items-center justify-center gap-2 rounded-md border border-border-light bg-surface-light py-2.5 font-ui text-sm font-semibold text-text-primary transition-colors duration-150 hover:bg-surface-hover">
+          <button
+            type="button"
+            onClick={() => {
+              window.location.assign(getSocialLoginUrl("google"));
+            }}
+            className="flex items-center justify-center gap-2 rounded-md border border-border-light bg-surface-light py-2.5 font-ui text-sm font-semibold text-text-primary transition-colors duration-150 hover:bg-surface-hover"
+          >
             <GoogleIcon />
             Google
           </button>
-          <button className="flex items-center justify-center gap-2 rounded-md border border-border-light bg-surface-light py-2.5 font-ui text-sm font-semibold text-text-primary transition-colors duration-150 hover:bg-surface-hover">
+          <button
+            type="button"
+            onClick={() => {
+              window.location.assign(getSocialLoginUrl("facebook"));
+            }}
+            className="flex items-center justify-center gap-2 rounded-md border border-border-light bg-surface-light py-2.5 font-ui text-sm font-semibold text-text-primary transition-colors duration-150 hover:bg-surface-hover"
+          >
             <FacebookIcon />
             Facebook
           </button>
