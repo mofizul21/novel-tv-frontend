@@ -4,15 +4,23 @@ import { use, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Loader2, Play } from "lucide-react";
-import { fetchSeriesBySlug, type Series } from "@/lib/series";
+import { useAuth } from "@/lib/auth-context";
+import { fetchSeriesAccess, fetchSeriesBySlug, type Series } from "@/lib/series";
+import { startPpvCheckout } from "@/lib/ppv";
+import type { CheckoutGateway } from "@/lib/subscriptions";
+import type { ContentAccess } from "@/lib/catalog-types";
 import { ApiError } from "@/lib/api";
 
 export default function SeriesDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
+  const { user } = useAuth();
 
   const [series, setSeries] = useState<Series | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [access, setAccess] = useState<ContentAccess | null>(null);
+  const [checkoutGateway, setCheckoutGateway] = useState<CheckoutGateway | null>(null);
+  const [rentError, setRentError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -40,6 +48,40 @@ export default function SeriesDetailPage({ params }: { params: Promise<{ slug: s
       cancelled = true;
     };
   }, [slug]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const data = await fetchSeriesAccess(slug);
+        if (!cancelled) setAccess(data);
+      } catch {
+        if (!cancelled) setAccess(null);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [slug, user]);
+
+  const canWatch = access?.reason === "subscribed" || access?.reason === "ppv_purchased";
+
+  async function handleRent(gateway: CheckoutGateway) {
+    if (!series) return;
+    setCheckoutGateway(gateway);
+    setRentError(null);
+    try {
+      const url = await startPpvCheckout("series", series.id, gateway);
+      window.location.assign(url);
+    } catch (err) {
+      setRentError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
+      setCheckoutGateway(null);
+    }
+  }
 
   if (isLoading) {
     return (
@@ -84,6 +126,11 @@ export default function SeriesDetailPage({ params }: { params: Promise<{ slug: s
           </div>
 
           <div className="max-w-2xl">
+            {series.is_ppv && (
+              <span className="mb-3 inline-block rounded bg-primary px-2 py-0.5 font-ui text-[10px] font-bold uppercase tracking-wide text-text-primary">
+                Pay-Per-View
+              </span>
+            )}
             <h1 className="font-heading text-5xl uppercase text-text-primary sm:text-6xl">{series.title}</h1>
 
             <div className="mt-3 flex flex-wrap items-center gap-3 font-body text-sm text-text-secondary">
@@ -116,6 +163,41 @@ export default function SeriesDetailPage({ params }: { params: Promise<{ slug: s
 
             {series.synopsis && (
               <p className="mt-5 font-body text-base text-text-secondary">{series.synopsis}</p>
+            )}
+
+            {series.is_ppv && !canWatch && (
+              <div className="mt-6">
+                {!user || access?.reason === "requires_subscription" ? (
+                  <Link
+                    href="/pricing"
+                    className="flex w-fit items-center gap-2 rounded-md bg-primary px-6 py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary shadow-primary transition-colors duration-150 hover:bg-accent"
+                  >
+                    <Play size={18} fill="currentColor" />
+                    Subscribe to Watch
+                  </Link>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      onClick={() => handleRent("stripe")}
+                      disabled={checkoutGateway !== null}
+                      className="flex items-center gap-2 rounded-md bg-primary px-6 py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary shadow-primary transition-colors duration-150 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <Play size={18} fill="currentColor" />
+                      {checkoutGateway === "stripe"
+                        ? "Redirecting…"
+                        : `Rent with Card${series.ppv_price ? ` — $${series.ppv_price.toFixed(2)}` : ""}`}
+                    </button>
+                    <button
+                      onClick={() => handleRent("paypal")}
+                      disabled={checkoutGateway !== null}
+                      className="flex items-center gap-2 rounded-md border border-text-primary px-6 py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary transition-colors duration-150 hover:border-primary hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {checkoutGateway === "paypal" ? "Redirecting…" : "Rent with PayPal"}
+                    </button>
+                  </div>
+                )}
+                {rentError && <p className="mt-3 font-body text-sm text-error">{rentError}</p>}
+              </div>
             )}
 
             {series.cast && series.cast.length > 0 && (

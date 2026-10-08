@@ -3,9 +3,12 @@
 import MuxPlayer from "@mux/mux-player-react";
 import Link from "next/link";
 import { Loader2, PlayCircle } from "lucide-react";
+import type { ContentAccess } from "@/lib/catalog-types";
 
 export type ContentPlayerProps = {
   canWatch: boolean;
+  /** Drives PPV-aware messaging when canWatch is false — omit for the generic "subscribe" copy. */
+  accessReason?: ContentAccess["reason"];
   isLoggedIn: boolean;
   videoTitle: string;
   muxPlaybackId?: string | null;
@@ -34,6 +37,7 @@ const demoYoutubeId = process.env.NEXT_PUBLIC_DEMO_VIDEO_YOUTUBE_ID?.trim() || n
  */
 export function ContentPlayer({
   canWatch,
+  accessReason,
   isLoggedIn,
   videoTitle,
   muxPlaybackId,
@@ -43,6 +47,15 @@ export function ContentPlayer({
   muxStoryboardToken,
 }: ContentPlayerProps) {
   if (!canWatch) {
+    if (accessReason === "requires_ppv") {
+      return (
+        <div className="flex h-full w-full flex-col items-center justify-center gap-3 p-4 text-center text-text-muted">
+          <PlayCircle size={40} />
+          <p className="font-body text-sm">Rent this title to watch — use the Rent button above.</p>
+        </div>
+      );
+    }
+
     return (
       <div className="flex h-full w-full flex-col items-center justify-center gap-3 p-4 text-center text-text-muted">
         <PlayCircle size={40} />

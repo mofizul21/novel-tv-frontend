@@ -5,6 +5,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { Play, Loader2, Check, Plus } from "lucide-react";
 import { fetchMovieAccess, fetchMovieBySlug, fetchMoviePlaybackToken, type Movie } from "@/lib/movies";
+import { startPpvCheckout } from "@/lib/ppv";
+import type { CheckoutGateway } from "@/lib/subscriptions";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useFavorites } from "@/lib/favorites-context";
@@ -21,6 +23,8 @@ export default function MovieDetailPage({ params }: { params: Promise<{ slug: st
   const [error, setError] = useState<string | null>(null);
   const [access, setAccess] = useState<ContentAccess | null>(null);
   const [playbackTokens, setPlaybackTokens] = useState<PlaybackTokens | null | undefined>(undefined);
+  const [checkoutGateway, setCheckoutGateway] = useState<CheckoutGateway | null>(null);
+  const [rentError, setRentError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -69,6 +73,19 @@ export default function MovieDetailPage({ params }: { params: Promise<{ slug: st
   }, [slug, user]);
 
   const canWatch = access?.reason === "subscribed" || access?.reason === "ppv_purchased";
+
+  async function handleRent(gateway: CheckoutGateway) {
+    if (!movie) return;
+    setCheckoutGateway(gateway);
+    setRentError(null);
+    try {
+      const url = await startPpvCheckout("movie", movie.id, gateway);
+      window.location.assign(url);
+    } catch (err) {
+      setRentError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
+      setCheckoutGateway(null);
+    }
+  }
 
   useEffect(() => {
     if (!movie || movie.mux_playback_policy !== "signed" || !canWatch) return;
@@ -183,14 +200,25 @@ export default function MovieDetailPage({ params }: { params: Promise<{ slug: st
                   Watch Now
                 </a>
               ) : (
-                <button
-                  disabled
-                  title="Pay-per-view purchasing isn't wired up yet"
-                  className="flex items-center gap-2 rounded-md bg-primary px-6 py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary opacity-60 shadow-primary"
-                >
-                  <Play size={18} fill="currentColor" />
-                  {movie.is_ppv ? `Rent for $${movie.ppv_price?.toFixed(2)}` : "Play"}
-                </button>
+                <div className="flex flex-wrap items-center gap-3">
+                  <button
+                    onClick={() => handleRent("stripe")}
+                    disabled={checkoutGateway !== null}
+                    className="flex items-center gap-2 rounded-md bg-primary px-6 py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary shadow-primary transition-colors duration-150 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <Play size={18} fill="currentColor" />
+                    {checkoutGateway === "stripe"
+                      ? "Redirecting…"
+                      : `Rent with Card${movie.ppv_price ? ` — $${movie.ppv_price.toFixed(2)}` : ""}`}
+                  </button>
+                  <button
+                    onClick={() => handleRent("paypal")}
+                    disabled={checkoutGateway !== null}
+                    className="flex items-center gap-2 rounded-md border border-text-primary px-6 py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary transition-colors duration-150 hover:border-primary hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {checkoutGateway === "paypal" ? "Redirecting…" : "Rent with PayPal"}
+                  </button>
+                </div>
               )}
 
               {user && (
@@ -213,6 +241,8 @@ export default function MovieDetailPage({ params }: { params: Promise<{ slug: st
               )}
             </div>
 
+            {rentError && <p className="mt-3 font-body text-sm text-error">{rentError}</p>}
+
             {movie.cast && movie.cast.length > 0 && (
               <div className="mt-8">
                 <h2 className="font-ui text-sm font-semibold uppercase tracking-wide text-text-secondary">
@@ -232,6 +262,7 @@ export default function MovieDetailPage({ params }: { params: Promise<{ slug: st
         <div className="relative aspect-video overflow-hidden rounded-md border border-border bg-black">
           <ContentPlayer
             canWatch={canWatch}
+            accessReason={access?.reason}
             isLoggedIn={Boolean(user)}
             videoTitle={movie.title}
             muxPlaybackId={movie.mux_playback_id}

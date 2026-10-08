@@ -161,6 +161,7 @@ export default function EpisodeDetailPage({
             <div className="relative aspect-video overflow-hidden rounded-md border border-border bg-black">
               <ContentPlayer
                 canWatch={Boolean(access?.can_watch)}
+                accessReason={access?.reason}
                 isLoggedIn={Boolean(user)}
                 videoTitle={`${series.title} S${season.number}E${episode.number} ${episode.title}`}
                 muxPlaybackId={episode.mux_playback_id}
