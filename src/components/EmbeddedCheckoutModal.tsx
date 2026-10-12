@@ -25,7 +25,15 @@ export function EmbeddedCheckoutModal({ clientSecret, publishableKey, onClose, o
   const stripePromise = useMemo(() => loadStripe(publishableKey), [publishableKey]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+    <div
+      className="fixed inset-0 flex items-center justify-center bg-black/70 p-4"
+      // The site header is sticky with z-index: var(--z-header) (1000) set
+      // via inline style, which beats Tailwind's z-50 class (z-index: 50)
+      // outright — this modal was rendering underneath it. --z-modal
+      // (1200, globals.css) is this design system's own token for exactly
+      // this case, same pattern Header.tsx itself uses for --z-header.
+      style={{ zIndex: "var(--z-modal)" }}
+    >
       {/* flex-col + overflow-hidden on this shell, with a hard vh cap (not
           max-h-full, which depends on the padded flex parent resolving
           percentages correctly — Stripe's embedded iframe can report a tall
