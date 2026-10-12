@@ -14,6 +14,7 @@ import {
 } from "@/lib/subscriptions";
 import { useAuth } from "@/lib/auth-context";
 import { ApiError } from "@/lib/api";
+import { EmbeddedCheckoutModal } from "@/components/EmbeddedCheckoutModal";
 
 const QUALITY_LABELS: Record<SubscriptionPlan["quality_cap"], string> = {
   sd: "SD",
@@ -32,6 +33,9 @@ export default function PricingPage() {
   const [checkoutKey, setCheckoutKey] = useState<string | null>(null);
   const [changingSlug, setChangingSlug] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [embeddedCheckout, setEmbeddedCheckout] = useState<{ clientSecret: string; publishableKey: string } | null>(
+    null,
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -79,11 +83,27 @@ export default function PricingPage() {
     setCheckoutKey(key);
 
     try {
-      const url = await startSubscriptionCheckout(plan.slug, gateway);
-      window.location.assign(url);
+      const result = await startSubscriptionCheckout(plan.slug, gateway);
+      if (result.gateway === "stripe") {
+        setEmbeddedCheckout({ clientSecret: result.clientSecret, publishableKey: result.publishableKey });
+      } else {
+        // PayPal isn't part of this change — still a redirect, same as before.
+        window.location.assign(result.url);
+      }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
       setCheckoutKey(null);
+    }
+  }
+
+  async function handleCheckoutComplete() {
+    setEmbeddedCheckout(null);
+    setCheckoutKey(null);
+    try {
+      setCurrentSubscription(await fetchCurrentSubscription());
+    } catch {
+      // Non-critical — the subscription section will just reflect the
+      // change next time this page loads if this refresh fails.
     }
   }
 
@@ -103,6 +123,17 @@ export default function PricingPage() {
 
   return (
     <section className="min-h-[calc(100vh-64px)] bg-background">
+      {embeddedCheckout && (
+        <EmbeddedCheckoutModal
+          clientSecret={embeddedCheckout.clientSecret}
+          publishableKey={embeddedCheckout.publishableKey}
+          onClose={() => {
+            setEmbeddedCheckout(null);
+            setCheckoutKey(null);
+          }}
+          onComplete={handleCheckoutComplete}
+        />
+      )}
       <div className="mx-auto max-w-360 px-4 py-16 sm:px-6 lg:px-10">
         <div className="text-center">
           <h1 className="font-heading text-5xl uppercase text-text-primary sm:text-6xl">
@@ -205,7 +236,7 @@ export default function PricingPage() {
                           disabled={checkoutKey === `${plan.slug}:stripe`}
                           className="w-full rounded-md bg-primary py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary transition-colors duration-150 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                          {checkoutKey === `${plan.slug}:stripe` ? "Redirecting…" : "Subscribe with Card"}
+                          {checkoutKey === `${plan.slug}:stripe` ? "Loading checkout…" : "Subscribe with Card"}
                         </button>
                         <button
                           onClick={() => handleSubscribe(plan, "paypal")}

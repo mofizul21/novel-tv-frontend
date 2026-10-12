@@ -11,6 +11,7 @@ import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useFavorites } from "@/lib/favorites-context";
 import { ContentPlayer } from "@/components/ContentPlayer";
+import { EmbeddedCheckoutModal } from "@/components/EmbeddedCheckoutModal";
 import type { ContentAccess, PlaybackTokens } from "@/lib/catalog-types";
 
 export default function MovieDetailPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -25,6 +26,9 @@ export default function MovieDetailPage({ params }: { params: Promise<{ slug: st
   const [playbackTokens, setPlaybackTokens] = useState<PlaybackTokens | null | undefined>(undefined);
   const [checkoutGateway, setCheckoutGateway] = useState<CheckoutGateway | null>(null);
   const [rentError, setRentError] = useState<string | null>(null);
+  const [embeddedCheckout, setEmbeddedCheckout] = useState<{ clientSecret: string; publishableKey: string } | null>(
+    null,
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -79,11 +83,26 @@ export default function MovieDetailPage({ params }: { params: Promise<{ slug: st
     setCheckoutGateway(gateway);
     setRentError(null);
     try {
-      const url = await startPpvCheckout("movie", movie.id, gateway);
-      window.location.assign(url);
+      const result = await startPpvCheckout("movie", movie.id, gateway);
+      if (result.gateway === "stripe") {
+        setEmbeddedCheckout({ clientSecret: result.clientSecret, publishableKey: result.publishableKey });
+      } else {
+        // PayPal isn't part of this change — still a redirect, same as before.
+        window.location.assign(result.url);
+      }
     } catch (err) {
       setRentError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
       setCheckoutGateway(null);
+    }
+  }
+
+  async function handleCheckoutComplete() {
+    setEmbeddedCheckout(null);
+    setCheckoutGateway(null);
+    try {
+      setAccess(await fetchMovieAccess(slug));
+    } catch {
+      setAccess(null);
     }
   }
 
@@ -127,6 +146,17 @@ export default function MovieDetailPage({ params }: { params: Promise<{ slug: st
 
   return (
     <section className="bg-background">
+      {embeddedCheckout && (
+        <EmbeddedCheckoutModal
+          clientSecret={embeddedCheckout.clientSecret}
+          publishableKey={embeddedCheckout.publishableKey}
+          onClose={() => {
+            setEmbeddedCheckout(null);
+            setCheckoutGateway(null);
+          }}
+          onComplete={handleCheckoutComplete}
+        />
+      )}
       <div className="relative isolate min-h-100 overflow-hidden sm:min-h-125">
         <div className="absolute inset-0 -z-10">
           <Image
@@ -208,7 +238,7 @@ export default function MovieDetailPage({ params }: { params: Promise<{ slug: st
                   >
                     <Play size={18} fill="currentColor" />
                     {checkoutGateway === "stripe"
-                      ? "Redirecting…"
+                      ? "Loading checkout…"
                       : `Rent with Card${movie.ppv_price ? ` — $${movie.ppv_price.toFixed(2)}` : ""}`}
                   </button>
                   <button

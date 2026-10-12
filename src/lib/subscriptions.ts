@@ -46,13 +46,28 @@ export async function changeSubscriptionPlan(planSlug: string): Promise<CurrentS
 
 export type CheckoutGateway = "stripe" | "paypal";
 
+export type CheckoutStart =
+  | { gateway: "stripe"; clientSecret: string; publishableKey: string }
+  | { gateway: "paypal"; url: string };
+
+/**
+ * Stripe comes back as a client_secret for an embedded checkout session
+ * (mounted inline via <EmbeddedCheckout>, no redirect) — PayPal still comes
+ * back as an approval URL to redirect to, since PayPal's own embedded
+ * button flow is a separate integration not covered by this change.
+ */
 export async function startSubscriptionCheckout(
   planSlug: string,
   gateway: CheckoutGateway = "stripe",
-): Promise<string> {
-  const response = await apiFetch<{ url: string }>("checkout/subscriptions", {
+): Promise<CheckoutStart> {
+  const response = await apiFetch<
+    { gateway: "stripe"; client_secret: string; publishable_key: string } | { gateway: "paypal"; url: string }
+  >("checkout/subscriptions", {
     method: "POST",
     body: JSON.stringify({ plan_slug: planSlug, gateway }),
   });
-  return response.url;
+
+  return response.gateway === "stripe"
+    ? { gateway: "stripe", clientSecret: response.client_secret, publishableKey: response.publishable_key }
+    : { gateway: "paypal", url: response.url };
 }

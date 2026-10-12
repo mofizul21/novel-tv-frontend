@@ -10,6 +10,7 @@ import { startPpvCheckout } from "@/lib/ppv";
 import type { CheckoutGateway } from "@/lib/subscriptions";
 import type { ContentAccess } from "@/lib/catalog-types";
 import { ApiError } from "@/lib/api";
+import { EmbeddedCheckoutModal } from "@/components/EmbeddedCheckoutModal";
 
 export default function SeriesDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
@@ -21,6 +22,9 @@ export default function SeriesDetailPage({ params }: { params: Promise<{ slug: s
   const [access, setAccess] = useState<ContentAccess | null>(null);
   const [checkoutGateway, setCheckoutGateway] = useState<CheckoutGateway | null>(null);
   const [rentError, setRentError] = useState<string | null>(null);
+  const [embeddedCheckout, setEmbeddedCheckout] = useState<{ clientSecret: string; publishableKey: string } | null>(
+    null,
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -75,11 +79,25 @@ export default function SeriesDetailPage({ params }: { params: Promise<{ slug: s
     setCheckoutGateway(gateway);
     setRentError(null);
     try {
-      const url = await startPpvCheckout("series", series.id, gateway);
-      window.location.assign(url);
+      const result = await startPpvCheckout("series", series.id, gateway);
+      if (result.gateway === "stripe") {
+        setEmbeddedCheckout({ clientSecret: result.clientSecret, publishableKey: result.publishableKey });
+      } else {
+        window.location.assign(result.url);
+      }
     } catch (err) {
       setRentError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
       setCheckoutGateway(null);
+    }
+  }
+
+  async function handleCheckoutComplete() {
+    setEmbeddedCheckout(null);
+    setCheckoutGateway(null);
+    try {
+      setAccess(await fetchSeriesAccess(slug));
+    } catch {
+      setAccess(null);
     }
   }
 
@@ -106,6 +124,17 @@ export default function SeriesDetailPage({ params }: { params: Promise<{ slug: s
 
   return (
     <section className="bg-background">
+      {embeddedCheckout && (
+        <EmbeddedCheckoutModal
+          clientSecret={embeddedCheckout.clientSecret}
+          publishableKey={embeddedCheckout.publishableKey}
+          onClose={() => {
+            setEmbeddedCheckout(null);
+            setCheckoutGateway(null);
+          }}
+          onComplete={handleCheckoutComplete}
+        />
+      )}
       <div className="relative isolate min-h-100 overflow-hidden sm:min-h-125">
         <div className="absolute inset-0 -z-10">
           <Image
@@ -184,7 +213,7 @@ export default function SeriesDetailPage({ params }: { params: Promise<{ slug: s
                     >
                       <Play size={18} fill="currentColor" />
                       {checkoutGateway === "stripe"
-                        ? "Redirecting…"
+                        ? "Loading checkout…"
                         : `Rent with Card${series.ppv_price ? ` — $${series.ppv_price.toFixed(2)}` : ""}`}
                     </button>
                     <button

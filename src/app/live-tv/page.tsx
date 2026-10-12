@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -9,6 +9,7 @@ import {
   LayoutGrid,
   ChevronDown,
   ChevronRight,
+  Loader2,
   Tv,
   Newspaper,
   Trophy,
@@ -24,14 +25,10 @@ import {
   Tablet,
   Laptop,
 } from "lucide-react";
-import {
-  liveTvCategories,
-  guideTimes,
-  guideChannels,
-  currentlyPlaying,
-  onNextItems,
-  streamingDevices,
-} from "@/lib/demo-data";
+import { guideTimes, currentlyPlaying, onNextItems, streamingDevices } from "@/lib/demo-data";
+import { fetchLiveTvCategories, fetchLiveTvChannels, type LiveTvCategory, type LiveTvChannel } from "@/lib/live-tv";
+
+const ALL_CHANNELS = "All Channels";
 
 const categoryIcons: Record<string, React.ComponentType<{ size?: number }>> = {
   "All Channels": Tv,
@@ -54,7 +51,44 @@ const bottomNavItems = [
 
 export default function LiveTvPage() {
   const pathname = usePathname();
-  const [activeCategory, setActiveCategory] = useState(liveTvCategories[0]);
+  const [activeCategory, setActiveCategory] = useState(ALL_CHANNELS);
+  const [categories, setCategories] = useState<LiveTvCategory[]>([]);
+  const [channels, setChannels] = useState<LiveTvChannel[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const [categoriesData, channelsData] = await Promise.all([
+          fetchLiveTvCategories(),
+          fetchLiveTvChannels(),
+        ]);
+        if (!cancelled) {
+          setCategories(categoriesData);
+          setChannels(channelsData);
+        }
+      } catch {
+        if (!cancelled) {
+          setCategories([]);
+          setChannels([]);
+        }
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const categoryNames = [ALL_CHANNELS, ...categories.map((category) => category.name)];
+  const visibleChannels =
+    activeCategory === ALL_CHANNELS
+      ? channels
+      : channels.filter((channel) => channel.category.name === activeCategory);
 
   return (
     <>
@@ -108,7 +142,7 @@ export default function LiveTvPage() {
             </div>
 
             <div className="no-scrollbar mt-8 flex gap-2 overflow-x-auto pb-1">
-              {liveTvCategories.map((cat) => {
+              {categoryNames.map((cat) => {
                 const Icon = categoryIcons[cat] ?? Tv;
                 const selected = activeCategory === cat;
                 return (
@@ -146,103 +180,106 @@ export default function LiveTvPage() {
             </a>
           </div>
 
-          <div className="overflow-x-auto rounded-lg border border-border">
-            <div className="flex min-w-[900px]">
-              {/* Channel column — kept outside the relative time-grid so the
-                  "now" indicator's percentage offset lines up with just the
-                  time columns. */}
-              <div className="w-44 flex-none border-r border-border">
-                <div className="flex h-10 items-center gap-1 border-b border-border bg-surface px-4 font-ui text-xs font-semibold uppercase tracking-wide text-primary">
-                  Today
-                  <ChevronDown size={14} />
-                </div>
-                {guideChannels.map((channel, i) => (
-                  <div
-                    key={channel.id}
-                    className={`flex h-[74px] items-center gap-2 px-4 ${
-                      i % 2 === 0 ? "bg-surface-light/40" : ""
-                    } ${i > 0 ? "border-t border-border" : ""}`}
-                  >
-                    <div>
-                      {channel.logo ? (
-                        <Image
-                          src={channel.logo}
-                          alt={channel.name}
-                          width={220}
-                          height={60}
-                          className="h-5 w-auto object-contain"
-                        />
-                      ) : (
-                        <span className="font-heading text-base uppercase tracking-wide text-text-primary">
-                          {channel.name}
-                        </span>
-                      )}
-                      <p className="font-body text-[10px] text-text-muted">
-                        {channel.number}
-                      </p>
-                    </div>
-                    <span className="rounded bg-primary px-1.5 py-0.5 font-ui text-[10px] font-bold uppercase tracking-wide text-text-primary">
-                      Live
-                    </span>
+          {isLoading ? (
+            <div className="flex items-center justify-center rounded-lg border border-border py-20">
+              <Loader2 size={20} className="animate-spin text-text-secondary" />
+            </div>
+          ) : visibleChannels.length === 0 ? (
+            <div className="flex items-center justify-center rounded-lg border border-border py-20">
+              <p className="font-body text-sm text-text-secondary">No channels in this category yet.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto rounded-lg border border-border">
+              <div className="flex min-w-[900px]">
+                {/* Channel column — kept outside the relative time-grid so the
+                    "now" indicator's percentage offset lines up with just the
+                    time columns. */}
+                <div className="w-44 flex-none border-r border-border">
+                  <div className="flex h-10 items-center gap-1 border-b border-border bg-surface px-4 font-ui text-xs font-semibold uppercase tracking-wide text-primary">
+                    Today
+                    <ChevronDown size={14} />
                   </div>
-                ))}
-              </div>
-
-              {/* Time grid */}
-              <div className="relative flex-1">
-                {/* "Now" indicator */}
-                <div
-                  className="pointer-events-none absolute top-0 bottom-0 z-10 w-px bg-primary"
-                  style={{ left: "18%" }}
-                >
-                  <span className="absolute -left-1 -top-1 h-2 w-2 rounded-full bg-primary" />
-                  <span className="absolute -bottom-1 -left-1 h-2 w-2 rounded-full bg-primary" />
-                </div>
-
-                <div className="grid h-10 grid-cols-5 border-b border-border bg-surface">
-                  {guideTimes.map((time) => (
+                  {visibleChannels.map((channel, i) => (
                     <div
-                      key={time}
-                      className="flex items-center px-4 font-ui text-xs font-semibold uppercase tracking-wide text-text-secondary"
+                      key={channel.id}
+                      className={`flex h-[74px] items-center gap-2 px-4 ${
+                        i % 2 === 0 ? "bg-surface-light/40" : ""
+                      } ${i > 0 ? "border-t border-border" : ""}`}
                     >
-                      {time}
+                      <div>
+                        {channel.logo_url ? (
+                          <Image
+                            src={channel.logo_url}
+                            alt={channel.name}
+                            width={220}
+                            height={60}
+                            className="h-5 w-auto object-contain"
+                          />
+                        ) : (
+                          <span className="font-heading text-base uppercase tracking-wide text-text-primary">
+                            {channel.name}
+                          </span>
+                        )}
+                        {channel.channel_number && (
+                          <p className="font-body text-[10px] text-text-muted">
+                            {channel.channel_number}
+                          </p>
+                        )}
+                      </div>
+                      <span className="rounded bg-primary px-1.5 py-0.5 font-ui text-[10px] font-bold uppercase tracking-wide text-text-primary">
+                        Live
+                      </span>
                     </div>
                   ))}
                 </div>
 
-                {guideChannels.map((channel, i) => (
+                {/* Time grid */}
+                <div className="relative flex-1">
+                  {/* "Now" indicator */}
                   <div
-                    key={channel.id}
-                    className={`grid h-[74px] grid-cols-5 ${
-                      i % 2 === 0 ? "bg-surface-light/40" : ""
-                    } ${i > 0 ? "border-t border-border" : ""}`}
+                    className="pointer-events-none absolute top-0 bottom-0 z-10 w-px bg-primary"
+                    style={{ left: "18%" }}
                   >
-                    {channel.slots.map((slot, idx) => (
+                    <span className="absolute -left-1 -top-1 h-2 w-2 rounded-full bg-primary" />
+                    <span className="absolute -bottom-1 -left-1 h-2 w-2 rounded-full bg-primary" />
+                  </div>
+
+                  <div className="grid h-10 grid-cols-5 border-b border-border bg-surface">
+                    {guideTimes.map((time) => (
                       <div
-                        key={idx}
-                        className="relative border-l border-border/60 px-4 py-2 first:border-l-0"
-                        style={{ gridColumn: `span ${slot.span}` }}
+                        key={time}
+                        className="flex items-center px-4 font-ui text-xs font-semibold uppercase tracking-wide text-text-secondary"
                       >
-                        <p className="font-ui text-sm font-medium text-text-primary">
-                          {slot.title}
-                        </p>
-                        {slot.subtitle && (
-                          <p className="mt-0.5 font-body text-xs text-text-muted">
-                            {slot.subtitle}
-                          </p>
-                        )}
-                        {i === 0 && idx === 0 && (
-                          <div className="absolute inset-x-4 bottom-2 h-0.5 overflow-hidden rounded-full bg-white/20">
-                            <div className="h-full w-3/4 rounded-full bg-primary" />
-                          </div>
-                        )}
+                        {time}
                       </div>
                     ))}
                   </div>
-                ))}
+
+                  {/* Programming schedule isn't available yet (no EPG feed
+                      until a real broadcast license is in place) — each
+                      channel just shows one generic placeholder slot spanning
+                      the full row for now. */}
+                  {visibleChannels.map((channel, i) => (
+                    <div
+                      key={channel.id}
+                      className={`grid h-[74px] grid-cols-5 ${
+                        i % 2 === 0 ? "bg-surface-light/40" : ""
+                      } ${i > 0 ? "border-t border-border" : ""}`}
+                    >
+                      <div className="relative px-4 py-2" style={{ gridColumn: "span 5" }}>
+                        <p className="font-ui text-sm font-medium text-text-primary">
+                          Live Programming
+                        </p>
+                        <p className="mt-0.5 font-body text-xs text-text-muted">
+                          Schedule coming soon
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </section>
         {/* ====================== Schedule Section: End ====================== */}
 
