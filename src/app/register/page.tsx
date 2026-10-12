@@ -7,6 +7,7 @@ import Image from "next/image";
 import { User, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { ApiError } from "@/lib/api";
 import { getSocialLoginUrl, registerUser } from "@/lib/auth";
+import { useAuth } from "@/lib/auth-context";
 
 function GoogleIcon() {
   return (
@@ -46,6 +47,7 @@ function FacebookIcon() {
 function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user } = useAuth();
   const redirectParam = searchParams.get("redirect");
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState("");
@@ -83,6 +85,47 @@ function RegisterForm() {
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  if (user) {
+    return (
+      <section className="relative isolate flex min-h-[calc(100vh-64px)] items-center justify-center overflow-hidden bg-background px-4 py-12">
+        <div className="absolute inset-0 -z-10">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_60%_at_50%_0%,rgba(0,116,217,0.25),transparent_60%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_100%_100%,rgba(0,175,255,0.12),transparent_65%)]" />
+        </div>
+
+        <div className="w-full max-w-md rounded-xl border border-border bg-surface p-8 text-center shadow-md">
+          <Link href="/" className="mx-auto flex w-fit items-center justify-center">
+            <Image
+              src="/images/novel-tv-logo.png"
+              alt="Novel TV"
+              width={500}
+              height={228}
+              className="h-10 w-auto"
+            />
+          </Link>
+
+          <h1 className="mt-6 font-heading text-3xl uppercase text-text-primary">You&apos;re Signed In</h1>
+          <p className="mt-2 font-body text-sm text-text-secondary">
+            You&apos;re already signed in as <span className="text-text-primary">{user.name}</span>.
+          </p>
+
+          <Link
+            href="/dashboard"
+            className="mt-6 block w-full rounded-md bg-primary py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary transition-colors duration-150 hover:bg-accent"
+          >
+            Go to My Account
+          </Link>
+          <Link
+            href="/"
+            className="mt-3 block w-full rounded-md border border-border-light bg-surface-light py-3 font-ui text-sm font-semibold text-text-primary transition-colors duration-150 hover:bg-surface-hover"
+          >
+            Back to Home
+          </Link>
+        </div>
+      </section>
+    );
   }
 
   return (
