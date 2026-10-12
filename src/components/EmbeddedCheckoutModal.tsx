@@ -25,20 +25,30 @@ export function EmbeddedCheckoutModal({ clientSecret, publishableKey, onClose, o
   const stripePromise = useMemo(() => loadStripe(publishableKey), [publishableKey]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-8">
-      <div className="relative max-h-full w-full max-w-lg overflow-y-auto rounded-xl border border-border bg-surface p-4 shadow-md sm:p-6">
-        <button
-          type="button"
-          aria-label="Close checkout"
-          onClick={onClose}
-          className="absolute right-4 top-4 z-10 text-text-muted transition-colors duration-150 hover:text-text-primary"
-        >
-          <X size={20} />
-        </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+      {/* flex-col + overflow-hidden on this shell, with a hard vh cap (not
+          max-h-full, which depends on the padded flex parent resolving
+          percentages correctly — Stripe's embedded iframe can report a tall
+          intrinsic height and blow past that) — only the content below the
+          header scrolls, so the close button in the header never scrolls
+          out of view. */}
+      <div className="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-md">
+        <div className="flex items-center justify-end border-b border-border px-4 py-3">
+          <button
+            type="button"
+            aria-label="Close checkout"
+            onClick={onClose}
+            className="text-text-muted transition-colors duration-150 hover:text-text-primary"
+          >
+            <X size={20} />
+          </button>
+        </div>
 
-        <EmbeddedCheckoutProvider stripe={stripePromise} options={{ clientSecret, onComplete }}>
-          <EmbeddedCheckout />
-        </EmbeddedCheckoutProvider>
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+          <EmbeddedCheckoutProvider stripe={stripePromise} options={{ clientSecret, onComplete }}>
+            <EmbeddedCheckout />
+          </EmbeddedCheckoutProvider>
+        </div>
       </div>
     </div>
   );
