@@ -8,7 +8,9 @@ export type SubscriptionPlan = {
   billing_interval: "monthly" | "yearly";
   max_screens: number;
   quality_cap: "sd" | "hd" | "full_hd" | "uhd_4k";
-  trial_days: number;
+  trial_duration: number;
+  trial_duration_unit: "minutes" | "hours" | "days";
+  trial_label: string | null;
 };
 
 export async function fetchSubscriptionPlans(): Promise<SubscriptionPlan[]> {

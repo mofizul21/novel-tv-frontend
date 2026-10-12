@@ -9,7 +9,6 @@ import {
   LayoutGrid,
   ChevronDown,
   ChevronRight,
-  Info,
   Tv,
   Newspaper,
   Trophy,
@@ -250,48 +249,41 @@ export default function LiveTvPage() {
         {/* =========== Currently Playing / On Next Section: Start =========== */}
         <section className="mx-auto max-w-360 px-4 py-8 sm:px-6 lg:px-10">
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <div className="relative min-h-96 overflow-hidden rounded-lg border border-border bg-surface lg:col-span-2 lg:min-h-100">
-              <Image
-                src="/images/currently-playing.png"
-                alt=""
-                fill
-                sizes="(max-width: 1024px) 100vw, 66vw"
-                className="object-cover"
-              />
-              <div className="absolute inset-0 bg-linear-to-t from-black via-black/60 to-black/10" />
+            <div className="relative min-h-96 overflow-hidden rounded-lg border border-border bg-black lg:col-span-2 lg:min-h-100">
+              {currentlyPlaying.youtubeId ? (
+                <iframe
+                  src={`https://www.youtube.com/embed/${currentlyPlaying.youtubeId}`}
+                  title={currentlyPlaying.title}
+                  className="absolute inset-0 h-full w-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              ) : (
+                <Image
+                  src="/images/currently-playing.png"
+                  alt=""
+                  fill
+                  sizes="(max-width: 1024px) 100vw, 66vw"
+                  className="object-cover"
+                />
+              )}
 
-              <div className="absolute left-4 top-4 z-10 font-ui text-xs font-bold uppercase tracking-wide text-primary">
-                Currently Playing
-              </div>
-              <div className="absolute left-4 top-10 z-10 rounded bg-error px-2 py-0.5 font-ui text-[10px] font-bold uppercase tracking-wide text-text-primary">
-                Live
+              <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center gap-2 p-4">
+                <span className="font-ui text-xs font-bold uppercase tracking-wide text-primary drop-shadow">
+                  Currently Playing
+                </span>
+                <span className="rounded bg-error px-2 py-0.5 font-ui text-[10px] font-bold uppercase tracking-wide text-text-primary">
+                  Live
+                </span>
               </div>
 
-              <div className="absolute inset-x-0 bottom-0 p-4 sm:p-6">
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-black/80 to-transparent p-4 sm:p-6">
                 <h3 className="font-heading text-3xl uppercase text-text-primary">
                   {currentlyPlaying.title}
                 </h3>
                 <p className="mt-1 font-body text-sm text-text-secondary">
                   {currentlyPlaying.timeRange} &middot; {currentlyPlaying.channel}
                 </p>
-
-                <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-white/20">
-                  <div
-                    className="h-full rounded-full bg-primary"
-                    style={{ width: `${currentlyPlaying.progress}%` }}
-                  />
-                </div>
-
-                <div className="mt-5 flex flex-wrap items-center gap-4">
-                  <button className="flex items-center gap-2 rounded-md bg-primary px-6 py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary shadow-primary transition-colors duration-150 hover:bg-accent">
-                    <Play size={18} fill="currentColor" />
-                    Watch Now
-                  </button>
-                  <button className="flex items-center gap-2 rounded-md border border-text-primary px-6 py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary transition-colors duration-150 hover:border-primary hover:bg-primary">
-                    <Info size={16} />
-                    More Info
-                  </button>
-                </div>
               </div>
             </div>
 

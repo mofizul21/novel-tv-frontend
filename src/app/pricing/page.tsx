@@ -163,10 +163,10 @@ export default function PricingPage() {
                       <Check size={16} className="text-success" />
                       Up to {QUALITY_LABELS[plan.quality_cap]}
                     </li>
-                    {plan.trial_days > 0 && (
+                    {plan.trial_label && (
                       <li className="flex items-center gap-2">
                         <Check size={16} className="text-success" />
-                        {plan.trial_days}-day free trial
+                        {plan.trial_label} free trial
                       </li>
                     )}
                   </ul>

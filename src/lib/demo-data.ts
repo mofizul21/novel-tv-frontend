@@ -225,11 +225,17 @@ export const guideChannels: GuideChannel[] = [
   },
 ];
 
+/**
+ * One real, legitimately-embeddable live channel — DW News's official 24/7
+ * YouTube Live stream (embedding their own public livestream, not
+ * redistributing a raw broadcast feed). Everything else on this page is
+ * still placeholder data.
+ */
 export const currentlyPlaying = {
-  title: "NBA Finals",
-  timeRange: "7:00 PM - 10:00 PM",
-  channel: "ESPN",
-  progress: 32,
+  title: "DW News",
+  timeRange: "24/7 Live",
+  channel: "DW News",
+  youtubeId: "LuKwFajn37U",
 };
 
 export const onNextItems = [
