@@ -457,6 +457,7 @@ export const footerLinks = {
     { label: "Originals", href: "/originals" },
   ],
   help: [
+    { label: "About", href: "/about" },
     { label: "Help Center", href: "/help-center" },
     { label: "Contact Us", href: "/contact-us" },
     { label: "Terms of Use", href: "/terms-of-use" },
