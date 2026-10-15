@@ -84,3 +84,22 @@ export async function changePassword(input: {
     body: JSON.stringify(input),
   });
 }
+
+export async function requestPasswordReset(email: string): Promise<void> {
+  await apiFetch("auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function resetPassword(input: {
+  token: string;
+  email: string;
+  password: string;
+  password_confirmation: string;
+}): Promise<void> {
+  await apiFetch("auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}

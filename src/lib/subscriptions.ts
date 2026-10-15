@@ -59,12 +59,13 @@ export type CheckoutStart =
 export async function startSubscriptionCheckout(
   planSlug: string,
   gateway: CheckoutGateway = "stripe",
+  couponCode?: string,
 ): Promise<CheckoutStart> {
   const response = await apiFetch<
     { gateway: "stripe"; client_secret: string; publishable_key: string } | { gateway: "paypal"; url: string }
   >("checkout/subscriptions", {
     method: "POST",
-    body: JSON.stringify({ plan_slug: planSlug, gateway }),
+    body: JSON.stringify({ plan_slug: planSlug, gateway, coupon_code: couponCode || undefined }),
   });
 
   return response.gateway === "stripe"

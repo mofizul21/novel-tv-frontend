@@ -13,6 +13,7 @@ function PaypalReturnContent() {
   const purchasableType = searchParams.get("purchasable_type") as PurchasableType | null;
   const purchasableId = searchParams.get("purchasable_id");
   const purchasableSlug = searchParams.get("purchasable_slug");
+  const couponCode = searchParams.get("coupon_code") ?? undefined;
 
   const [state, setState] = useState<"capturing" | "done" | "error">("capturing");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -25,7 +26,7 @@ function PaypalReturnContent() {
 
     let cancelled = false;
 
-    capturePaypalPpvOrder(purchasableType, Number(purchasableId), orderId)
+    capturePaypalPpvOrder(purchasableType, Number(purchasableId), orderId, couponCode)
       .then(() => {
         if (!cancelled) setState("done");
       })
@@ -39,7 +40,7 @@ function PaypalReturnContent() {
     return () => {
       cancelled = true;
     };
-  }, [orderId, purchasableType, purchasableId]);
+  }, [orderId, purchasableType, purchasableId, couponCode]);
 
   const contentHref = purchasableSlug
     ? purchasableType === "series"

@@ -8,12 +8,18 @@ export async function startPpvCheckout(
   purchasableType: PurchasableType,
   purchasableId: number,
   gateway: CheckoutGateway = "stripe",
+  couponCode?: string,
 ): Promise<CheckoutStart> {
   const response = await apiFetch<
     { gateway: "stripe"; client_secret: string; publishable_key: string } | { gateway: "paypal"; url: string }
   >("checkout/ppv", {
     method: "POST",
-    body: JSON.stringify({ purchasable_type: purchasableType, purchasable_id: purchasableId, gateway }),
+    body: JSON.stringify({
+      purchasable_type: purchasableType,
+      purchasable_id: purchasableId,
+      gateway,
+      coupon_code: couponCode || undefined,
+    }),
   });
 
   return response.gateway === "stripe"
@@ -25,6 +31,7 @@ export async function capturePaypalPpvOrder(
   purchasableType: PurchasableType,
   purchasableId: number,
   paypalOrderId: string,
+  couponCode?: string,
 ): Promise<void> {
   await apiFetch("checkout/ppv/paypal/capture", {
     method: "POST",
@@ -32,6 +39,7 @@ export async function capturePaypalPpvOrder(
       purchasable_type: purchasableType,
       purchasable_id: purchasableId,
       paypal_order_id: paypalOrderId,
+      coupon_code: couponCode || undefined,
     }),
   });
 }

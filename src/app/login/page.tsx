@@ -208,9 +208,9 @@ function LoginForm() {
               />
               Remember me
             </label>
-            <a href="#" className="text-primary hover:text-accent">
+            <Link href="/forgot-password" className="text-primary hover:text-accent">
               Forgot password?
-            </a>
+            </Link>
           </div>
 
           <button

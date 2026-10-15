@@ -8,9 +8,11 @@ import { useAuth } from "@/lib/auth-context";
 import { fetchSeriesAccess, fetchSeriesBySlug, type Series } from "@/lib/series";
 import { startPpvCheckout } from "@/lib/ppv";
 import type { CheckoutGateway } from "@/lib/subscriptions";
+import { type CouponPreview } from "@/lib/coupons";
 import type { ContentAccess } from "@/lib/catalog-types";
 import { ApiError } from "@/lib/api";
 import { EmbeddedCheckoutModal } from "@/components/EmbeddedCheckoutModal";
+import { PpvCouponInput } from "@/components/PpvCouponInput";
 
 export default function SeriesDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
@@ -25,6 +27,7 @@ export default function SeriesDetailPage({ params }: { params: Promise<{ slug: s
   const [embeddedCheckout, setEmbeddedCheckout] = useState<{ clientSecret: string; publishableKey: string } | null>(
     null,
   );
+  const [appliedCoupon, setAppliedCoupon] = useState<CouponPreview | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -74,12 +77,19 @@ export default function SeriesDetailPage({ params }: { params: Promise<{ slug: s
 
   const canWatch = access?.reason === "subscribed" || access?.reason === "ppv_purchased";
 
+  function discountedPpvPrice(price: number): number {
+    if (!appliedCoupon) return price;
+    const discount =
+      appliedCoupon.discount_type === "percent" ? price * (appliedCoupon.discount_value / 100) : appliedCoupon.discount_value;
+    return Math.max(price - discount, 0);
+  }
+
   async function handleRent(gateway: CheckoutGateway) {
     if (!series) return;
     setCheckoutGateway(gateway);
     setRentError(null);
     try {
-      const result = await startPpvCheckout("series", series.id, gateway);
+      const result = await startPpvCheckout("series", series.id, gateway, appliedCoupon?.code);
       if (result.gateway === "stripe") {
         setEmbeddedCheckout({ clientSecret: result.clientSecret, publishableKey: result.publishableKey });
       } else {
@@ -214,7 +224,7 @@ export default function SeriesDetailPage({ params }: { params: Promise<{ slug: s
                       <Play size={18} fill="currentColor" />
                       {checkoutGateway === "stripe"
                         ? "Loading checkout…"
-                        : `Rent with Card${series.ppv_price ? ` — $${series.ppv_price.toFixed(2)}` : ""}`}
+                        : `Rent with Card${series.ppv_price ? ` — $${discountedPpvPrice(series.ppv_price).toFixed(2)}` : ""}`}
                     </button>
                     <button
                       onClick={() => handleRent("paypal")}
@@ -223,6 +233,13 @@ export default function SeriesDetailPage({ params }: { params: Promise<{ slug: s
                     >
                       {checkoutGateway === "paypal" ? "Redirecting…" : "Rent with PayPal"}
                     </button>
+                    <PpvCouponInput
+                      purchasableType="series"
+                      purchasableId={series.id}
+                      appliedCoupon={appliedCoupon}
+                      onApply={setAppliedCoupon}
+                      onRemove={() => setAppliedCoupon(null)}
+                    />
                   </div>
                 )}
                 {rentError && <p className="mt-3 font-body text-sm text-error">{rentError}</p>}

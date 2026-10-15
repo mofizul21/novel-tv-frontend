@@ -7,11 +7,13 @@ import { Play, Loader2, Check, Plus } from "lucide-react";
 import { fetchMovieAccess, fetchMovieBySlug, fetchMoviePlaybackToken, type Movie } from "@/lib/movies";
 import { startPpvCheckout } from "@/lib/ppv";
 import type { CheckoutGateway } from "@/lib/subscriptions";
+import { type CouponPreview } from "@/lib/coupons";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useFavorites } from "@/lib/favorites-context";
 import { ContentPlayer } from "@/components/ContentPlayer";
 import { EmbeddedCheckoutModal } from "@/components/EmbeddedCheckoutModal";
+import { PpvCouponInput } from "@/components/PpvCouponInput";
 import type { ContentAccess, PlaybackTokens } from "@/lib/catalog-types";
 
 export default function MovieDetailPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -29,6 +31,7 @@ export default function MovieDetailPage({ params }: { params: Promise<{ slug: st
   const [embeddedCheckout, setEmbeddedCheckout] = useState<{ clientSecret: string; publishableKey: string } | null>(
     null,
   );
+  const [appliedCoupon, setAppliedCoupon] = useState<CouponPreview | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -78,12 +81,19 @@ export default function MovieDetailPage({ params }: { params: Promise<{ slug: st
 
   const canWatch = access?.reason === "subscribed" || access?.reason === "ppv_purchased";
 
+  function discountedPpvPrice(price: number): number {
+    if (!appliedCoupon) return price;
+    const discount =
+      appliedCoupon.discount_type === "percent" ? price * (appliedCoupon.discount_value / 100) : appliedCoupon.discount_value;
+    return Math.max(price - discount, 0);
+  }
+
   async function handleRent(gateway: CheckoutGateway) {
     if (!movie) return;
     setCheckoutGateway(gateway);
     setRentError(null);
     try {
-      const result = await startPpvCheckout("movie", movie.id, gateway);
+      const result = await startPpvCheckout("movie", movie.id, gateway, appliedCoupon?.code);
       if (result.gateway === "stripe") {
         setEmbeddedCheckout({ clientSecret: result.clientSecret, publishableKey: result.publishableKey });
       } else {
@@ -239,7 +249,7 @@ export default function MovieDetailPage({ params }: { params: Promise<{ slug: st
                     <Play size={18} fill="currentColor" />
                     {checkoutGateway === "stripe"
                       ? "Loading checkout…"
-                      : `Rent with Card${movie.ppv_price ? ` — $${movie.ppv_price.toFixed(2)}` : ""}`}
+                      : `Rent with Card${movie.ppv_price ? ` — $${discountedPpvPrice(movie.ppv_price).toFixed(2)}` : ""}`}
                   </button>
                   <button
                     onClick={() => handleRent("paypal")}
@@ -248,6 +258,15 @@ export default function MovieDetailPage({ params }: { params: Promise<{ slug: st
                   >
                     {checkoutGateway === "paypal" ? "Redirecting…" : "Rent with PayPal"}
                   </button>
+                  {movie.is_ppv && (
+                    <PpvCouponInput
+                      purchasableType="movie"
+                      purchasableId={movie.id}
+                      appliedCoupon={appliedCoupon}
+                      onApply={setAppliedCoupon}
+                      onRemove={() => setAppliedCoupon(null)}
+                    />
+                  )}
                 </div>
               )}
 

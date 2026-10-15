@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, Tag, X } from "lucide-react";
 import {
   changeSubscriptionPlan,
   fetchCurrentSubscription,
@@ -12,6 +12,7 @@ import {
   type CurrentSubscription,
   type SubscriptionPlan,
 } from "@/lib/subscriptions";
+import { validateCoupon, type CouponPreview } from "@/lib/coupons";
 import { useAuth } from "@/lib/auth-context";
 import { ApiError } from "@/lib/api";
 import { EmbeddedCheckoutModal } from "@/components/EmbeddedCheckoutModal";
@@ -36,6 +37,11 @@ export default function PricingPage() {
   const [embeddedCheckout, setEmbeddedCheckout] = useState<{ clientSecret: string; publishableKey: string } | null>(
     null,
   );
+
+  const [couponInput, setCouponInput] = useState("");
+  const [couponStatus, setCouponStatus] = useState<"idle" | "checking" | "error">("idle");
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<CouponPreview | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -72,6 +78,50 @@ export default function PricingPage() {
     };
   }, [user]);
 
+  async function handleApplyCoupon() {
+    const code = couponInput.trim();
+    if (!code) return;
+
+    setCouponStatus("checking");
+    setCouponError(null);
+
+    const result = await validateCoupon({ code });
+
+    if (result.valid) {
+      setAppliedCoupon(result);
+      setCouponStatus("idle");
+    } else {
+      setAppliedCoupon(null);
+      setCouponError(result.message);
+      setCouponStatus("error");
+    }
+  }
+
+  function handleRemoveCoupon() {
+    setAppliedCoupon(null);
+    setCouponInput("");
+    setCouponStatus("idle");
+    setCouponError(null);
+  }
+
+  /**
+   * Client-side mirror of Coupon::discountedAmount() on the backend —
+   * purely for displaying a preview price per plan. The backend is the
+   * real source of truth and re-validates (including any plan-specific
+   * restriction this preview can't check without a round trip per plan)
+   * when checkout actually submits the code.
+   */
+  function priceWithCoupon(plan: SubscriptionPlan): number {
+    if (!appliedCoupon) return plan.price;
+
+    const discount =
+      appliedCoupon.discount_type === "percent"
+        ? plan.price * (appliedCoupon.discount_value / 100)
+        : appliedCoupon.discount_value;
+
+    return Math.max(plan.price - discount, 0);
+  }
+
   async function handleSubscribe(plan: SubscriptionPlan, gateway: CheckoutGateway) {
     if (!user) {
       router.push(`/login?redirect=${encodeURIComponent("/pricing")}`);
@@ -83,7 +133,7 @@ export default function PricingPage() {
     setCheckoutKey(key);
 
     try {
-      const result = await startSubscriptionCheckout(plan.slug, gateway);
+      const result = await startSubscriptionCheckout(plan.slug, gateway, appliedCoupon?.code);
       if (result.gateway === "stripe") {
         setEmbeddedCheckout({ clientSecret: result.clientSecret, publishableKey: result.publishableKey });
       } else {
@@ -150,6 +200,57 @@ export default function PricingPage() {
           </p>
         )}
 
+        {!isLoading && !currentSubscription && (
+          <div className="mx-auto mt-8 max-w-md">
+            {appliedCoupon ? (
+              <div className="flex items-center justify-between gap-3 rounded-md border border-success/30 bg-success/10 px-4 py-3">
+                <div className="flex items-center gap-2 font-body text-sm text-success">
+                  <Tag size={16} />
+                  <span>
+                    Code <span className="font-semibold">{appliedCoupon.code}</span> applied —{" "}
+                    {appliedCoupon.discount_type === "percent"
+                      ? `${appliedCoupon.discount_value}% off`
+                      : `$${appliedCoupon.discount_value.toFixed(2)} off`}
+                  </span>
+                </div>
+                <button
+                  onClick={handleRemoveCoupon}
+                  aria-label="Remove coupon"
+                  className="text-text-muted transition-colors duration-150 hover:text-text-primary"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            ) : (
+              <div>
+                <div className="flex gap-2">
+                  <div className="flex flex-1 items-center gap-2 rounded-md border border-border bg-surface-light px-3 py-2.5 focus-within:border-primary">
+                    <Tag size={16} className="text-text-muted" />
+                    <input
+                      type="text"
+                      value={couponInput}
+                      onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon()}
+                      placeholder="Have a coupon code?"
+                      className="w-full bg-transparent font-body text-sm uppercase text-text-primary placeholder:normal-case placeholder:text-text-muted focus:outline-none"
+                    />
+                  </div>
+                  <button
+                    onClick={handleApplyCoupon}
+                    disabled={!couponInput.trim() || couponStatus === "checking"}
+                    className="rounded-md border border-border-light bg-surface-light px-4 py-2.5 font-ui text-sm font-semibold text-text-primary transition-colors duration-150 hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {couponStatus === "checking" ? "Checking…" : "Apply"}
+                  </button>
+                </div>
+                {couponStatus === "error" && couponError && (
+                  <p className="mt-2 font-body text-sm text-error">{couponError}</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         {isLoading ? (
           <div className="mt-16 flex justify-center">
             <Loader2 size={24} className="animate-spin text-text-secondary" />
@@ -178,8 +279,15 @@ export default function PricingPage() {
                       </span>
                     )}
                   </div>
-                  <p className="mt-4 font-heading text-4xl text-text-primary">
-                    ${plan.price.toFixed(2)}
+                  <p className="mt-4 flex flex-wrap items-baseline gap-2 font-heading text-4xl text-text-primary">
+                    {appliedCoupon ? (
+                      <>
+                        <span className="text-text-muted line-through">${plan.price.toFixed(2)}</span>
+                        <span>${priceWithCoupon(plan).toFixed(2)}</span>
+                      </>
+                    ) : (
+                      <span>${plan.price.toFixed(2)}</span>
+                    )}
                     <span className="font-body text-base font-normal text-text-secondary">
                       /{plan.billing_interval === "yearly" ? "year" : "month"}
                     </span>
