@@ -23,6 +23,8 @@ export type ContentPlayerProps = {
   muxPlaybackToken?: string | null;
   muxThumbnailToken?: string | null;
   muxStoryboardToken?: string | null;
+  /** Set when the playback-token fetch failed specifically because the plan's concurrent-screen limit is already in use. */
+  screenLimitMessage?: string | null;
 };
 
 const demoYoutubeId = process.env.NEXT_PUBLIC_DEMO_VIDEO_YOUTUBE_ID?.trim() || null;
@@ -45,6 +47,7 @@ export function ContentPlayer({
   muxPlaybackToken,
   muxThumbnailToken,
   muxStoryboardToken,
+  screenLimitMessage,
 }: ContentPlayerProps) {
   if (!canWatch) {
     if (accessReason === "requires_ppv") {
@@ -83,9 +86,11 @@ export function ContentPlayer({
 
     if (!muxPlaybackToken) {
       return (
-        <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-text-muted">
+        <div className="flex h-full w-full flex-col items-center justify-center gap-2 p-4 text-center text-text-muted">
           <PlayCircle size={40} />
-          <p className="font-body text-sm">Playback isn&apos;t available right now.</p>
+          <p className="font-body text-sm">
+            {screenLimitMessage ?? "Playback isn't available right now."}
+          </p>
         </div>
       );
     }

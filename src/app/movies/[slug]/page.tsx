@@ -9,6 +9,8 @@ import { startPpvCheckout } from "@/lib/ppv";
 import type { CheckoutGateway } from "@/lib/subscriptions";
 import { type CouponPreview } from "@/lib/coupons";
 import { ApiError } from "@/lib/api";
+import { getDeviceId } from "@/lib/device";
+import { sendPlaybackHeartbeat, stopPlaybackSession } from "@/lib/playback-sessions";
 import { useAuth } from "@/lib/auth-context";
 import { useFavorites } from "@/lib/favorites-context";
 import { ContentPlayer } from "@/components/ContentPlayer";
@@ -26,6 +28,7 @@ export default function MovieDetailPage({ params }: { params: Promise<{ slug: st
   const [error, setError] = useState<string | null>(null);
   const [access, setAccess] = useState<ContentAccess | null>(null);
   const [playbackTokens, setPlaybackTokens] = useState<PlaybackTokens | null | undefined>(undefined);
+  const [screenLimitMessage, setScreenLimitMessage] = useState<string | null>(null);
   const [checkoutGateway, setCheckoutGateway] = useState<CheckoutGateway | null>(null);
   const [rentError, setRentError] = useState<string | null>(null);
   const [embeddedCheckout, setEmbeddedCheckout] = useState<{ clientSecret: string; publishableKey: string } | null>(
@@ -120,13 +123,20 @@ export default function MovieDetailPage({ params }: { params: Promise<{ slug: st
     if (!movie || movie.mux_playback_policy !== "signed" || !canWatch) return;
 
     let cancelled = false;
+    const deviceId = getDeviceId();
 
     (async () => {
       try {
-        const tokens = await fetchMoviePlaybackToken(movie.id);
-        if (!cancelled) setPlaybackTokens(tokens);
-      } catch {
-        if (!cancelled) setPlaybackTokens(null);
+        const tokens = await fetchMoviePlaybackToken(movie.id, deviceId);
+        if (!cancelled) {
+          setPlaybackTokens(tokens);
+          setScreenLimitMessage(null);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setPlaybackTokens(null);
+          setScreenLimitMessage(err instanceof ApiError && err.status === 409 ? err.message : null);
+        }
       }
     })();
 
@@ -134,6 +144,26 @@ export default function MovieDetailPage({ params }: { params: Promise<{ slug: st
       cancelled = true;
     };
   }, [movie, canWatch]);
+
+  // Keeps this device's screen slot alive while actively watching, and
+  // frees it immediately on navigating away — the backend also expires a
+  // session on its own after ~90s of no heartbeat, so this is for prompt
+  // release (e.g. switching devices right away), not strictly required.
+  useEffect(() => {
+    if (!playbackTokens?.token) return;
+
+    const deviceId = getDeviceId();
+    if (!deviceId) return;
+
+    const interval = setInterval(() => {
+      sendPlaybackHeartbeat(deviceId).catch(() => {});
+    }, 30_000);
+
+    return () => {
+      clearInterval(interval);
+      stopPlaybackSession(deviceId).catch(() => {});
+    };
+  }, [playbackTokens?.token]);
 
   if (isLoading) {
     return (
@@ -319,6 +349,7 @@ export default function MovieDetailPage({ params }: { params: Promise<{ slug: st
             muxPlaybackToken={playbackTokens === null ? null : playbackTokens?.token}
             muxThumbnailToken={playbackTokens?.thumbnailToken}
             muxStoryboardToken={playbackTokens?.storyboardToken}
+            screenLimitMessage={screenLimitMessage}
           />
         </div>
       </div>

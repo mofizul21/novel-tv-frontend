@@ -89,9 +89,10 @@ export async function fetchSeriesAccess(slug: string): Promise<ContentAccess> {
  * been confirmed — the backend re-checks entitlement anyway, but there's no
  * point fetching early.
  */
-export async function fetchEpisodePlaybackToken(episodeId: number): Promise<PlaybackTokens> {
+export async function fetchEpisodePlaybackToken(episodeId: number, deviceId?: string | null): Promise<PlaybackTokens> {
+  const query = deviceId ? `?device_id=${encodeURIComponent(deviceId)}` : "";
   const response = await apiFetch<{ token: string | null; thumbnail_token: string | null; storyboard_token: string | null }>(
-    `episodes/${episodeId}/playback-token`,
+    `episodes/${episodeId}/playback-token${query}`,
   );
   return {
     token: response.token,

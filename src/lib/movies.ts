@@ -69,9 +69,10 @@ export async function fetchMovieAccess(slug: string): Promise<ContentAccess> {
  * thumbnail, and storyboard preview. Only call this once access has already
  * been confirmed.
  */
-export async function fetchMoviePlaybackToken(movieId: number): Promise<PlaybackTokens> {
+export async function fetchMoviePlaybackToken(movieId: number, deviceId?: string | null): Promise<PlaybackTokens> {
+  const query = deviceId ? `?device_id=${encodeURIComponent(deviceId)}` : "";
   const response = await apiFetch<{ token: string | null; thumbnail_token: string | null; storyboard_token: string | null }>(
-    `movies/${movieId}/playback-token`,
+    `movies/${movieId}/playback-token${query}`,
   );
   return {
     token: response.token,

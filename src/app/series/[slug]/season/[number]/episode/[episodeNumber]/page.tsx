@@ -9,6 +9,8 @@ import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useFavorites } from "@/lib/favorites-context";
 import { recordProgress } from "@/lib/watch-history";
+import { getDeviceId } from "@/lib/device";
+import { sendPlaybackHeartbeat, stopPlaybackSession } from "@/lib/playback-sessions";
 import { ContentPlayer } from "@/components/ContentPlayer";
 import type { ContentAccess, PlaybackTokens } from "@/lib/catalog-types";
 
@@ -29,6 +31,7 @@ export default function EpisodeDetailPage({
   const [access, setAccess] = useState<ContentAccess | null>(null);
   const [watchedProgress, setWatchedProgress] = useState<number | null>(null);
   const [playbackTokens, setPlaybackTokens] = useState<PlaybackTokens | null | undefined>(undefined);
+  const [screenLimitMessage, setScreenLimitMessage] = useState<string | null>(null);
   const recordedEpisodeId = useRef<number | null>(null);
 
   useEffect(() => {
@@ -99,13 +102,20 @@ export default function EpisodeDetailPage({
     if (!episode || episode.mux_playback_policy !== "signed" || !access?.can_watch) return;
 
     let cancelled = false;
+    const deviceId = getDeviceId();
 
     (async () => {
       try {
-        const tokens = await fetchEpisodePlaybackToken(episode.id);
-        if (!cancelled) setPlaybackTokens(tokens);
-      } catch {
-        if (!cancelled) setPlaybackTokens(null);
+        const tokens = await fetchEpisodePlaybackToken(episode.id, deviceId);
+        if (!cancelled) {
+          setPlaybackTokens(tokens);
+          setScreenLimitMessage(null);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setPlaybackTokens(null);
+          setScreenLimitMessage(err instanceof ApiError && err.status === 409 ? err.message : null);
+        }
       }
     })();
 
@@ -113,6 +123,26 @@ export default function EpisodeDetailPage({
       cancelled = true;
     };
   }, [episode, access]);
+
+  // Keeps this device's screen slot alive while actively watching, and
+  // frees it immediately on navigating away — the backend also expires a
+  // session on its own after ~90s of no heartbeat, so this is for prompt
+  // release (e.g. switching devices right away), not strictly required.
+  useEffect(() => {
+    if (!playbackTokens?.token) return;
+
+    const deviceId = getDeviceId();
+    if (!deviceId) return;
+
+    const interval = setInterval(() => {
+      sendPlaybackHeartbeat(deviceId).catch(() => {});
+    }, 30_000);
+
+    return () => {
+      clearInterval(interval);
+      stopPlaybackSession(deviceId).catch(() => {});
+    };
+  }, [playbackTokens?.token]);
 
   async function handleMarkAsWatched() {
     if (!episode) return;
@@ -169,6 +199,7 @@ export default function EpisodeDetailPage({
                 muxPlaybackToken={playbackTokens === null ? null : playbackTokens?.token}
                 muxThumbnailToken={playbackTokens?.thumbnailToken}
                 muxStoryboardToken={playbackTokens?.storyboardToken}
+                screenLimitMessage={screenLimitMessage}
               />
             </div>
 
