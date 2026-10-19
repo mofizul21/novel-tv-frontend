@@ -2,49 +2,22 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Image from "next/image";
-import { Search as SearchIcon, Film, Tv as TvIcon, Loader2 } from "lucide-react";
+import { Search as SearchIcon, Loader2 } from "lucide-react";
 import { searchCatalog, type SearchResult } from "@/lib/search";
 import { ApiError } from "@/lib/api";
+import { PosterCard } from "@/components/PosterCard";
 
 function ResultCard({ result }: { result: SearchResult }) {
-  const TypeIcon = result.type === "series" ? TvIcon : Film;
-
   return (
-    <div className="relative aspect-2/3 overflow-hidden rounded-md border border-border bg-surface">
-      <span className="absolute left-2 top-2 z-10 flex items-center gap-1 rounded bg-black/60 px-2 py-0.5 font-ui text-[10px] font-bold uppercase tracking-wide text-text-primary backdrop-blur-sm">
-        <TypeIcon size={10} />
-        {result.type === "series" ? "Series" : "Movie"}
-      </span>
-      {result.is_ppv && (
-        <span className="absolute right-2 top-2 z-10 rounded bg-primary px-2 py-0.5 font-ui text-[10px] font-bold uppercase tracking-wide text-text-primary">
-          PPV
-        </span>
-      )}
-
-      <Image
-        src={result.poster_url ?? "/images/movie-poster.png"}
-        alt=""
-        fill
-        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-        className="object-cover"
-      />
-      <div className="absolute inset-0 bg-linear-to-t from-black via-black/40 to-transparent" />
-
-      <div className="absolute inset-x-0 bottom-0 p-3">
-        <p className="line-clamp-1 font-ui text-sm font-semibold text-text-primary">
-          {result.title}
-        </p>
-        <div className="mt-1 flex items-center justify-between gap-2">
-          <span className="font-body text-xs text-text-secondary">{result.year ?? "—"}</span>
-          {result.is_ppv && result.ppv_price !== null && (
-            <span className="rounded border border-border-light bg-black/40 px-1.5 py-0.5 font-ui text-[10px] font-semibold text-text-secondary backdrop-blur-sm">
-              ${result.ppv_price.toFixed(2)}
-            </span>
-          )}
-        </div>
-      </div>
-    </div>
+    <PosterCard
+      href={result.type === "series" ? `/series/${result.slug}` : `/movies/${result.slug}`}
+      title={result.title}
+      posterUrl={result.poster_url}
+      subtitle={result.year ? String(result.year) : undefined}
+      topLeftBadge={result.is_ppv ? "PPV" : undefined}
+      topRightBadge={result.type === "series" ? "Series" : "Movie"}
+      cornerTag={result.is_ppv && result.ppv_price !== null ? `$${result.ppv_price.toFixed(2)}` : undefined}
+    />
   );
 }
 
