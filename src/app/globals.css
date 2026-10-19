@@ -97,6 +97,15 @@ body {
   color: var(--color-text-primary);
 }
 
+/* Native <button> defaults to a plain arrow cursor, not the pointer/hand a
+   link gets — every clickable button site-wide should feel like one. */
+button:not(:disabled) {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+
 ::selection {
   background: var(--color-primary);
   color: var(--color-text-primary);
