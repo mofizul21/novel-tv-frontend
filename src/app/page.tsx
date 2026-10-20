@@ -31,6 +31,7 @@ import {
 import { useAuth } from "@/lib/auth-context";
 import { fetchWatchHistory, type WatchHistoryEntry } from "@/lib/watch-history";
 import { fetchRecommendations } from "@/lib/recommendations";
+import { fetchCurrentSubscription } from "@/lib/subscriptions";
 import type { SearchResult } from "@/lib/search";
 import { PosterCard } from "@/components/PosterCard";
 
@@ -73,8 +74,31 @@ function HomeContent() {
   const { user } = useAuth();
   const [watchHistory, setWatchHistory] = useState<WatchHistoryEntry[]>([]);
   const [recommendations, setRecommendations] = useState<SearchResult[]>([]);
+  const [isSubscribed, setIsSubscribed] = useState(false);
   const searchParams = useSearchParams();
   const accountDeleted = searchParams.get("account_deleted") === "1";
+
+  useEffect(() => {
+    if (!user) {
+      setIsSubscribed(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const subscription = await fetchCurrentSubscription();
+        if (!cancelled) setIsSubscribed(subscription !== null);
+      } catch {
+        if (!cancelled) setIsSubscribed(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -172,7 +196,7 @@ function HomeContent() {
 
             <div className="mt-7 flex flex-wrap items-center gap-4">
               <Link
-                href="/pricing"
+                href={isSubscribed ? "/movies" : "/pricing"}
                 className="flex items-center gap-2 rounded-md bg-primary px-6 py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary shadow-primary transition-colors duration-150 hover:bg-accent"
               >
                 <Play size={18} fill="currentColor" />
