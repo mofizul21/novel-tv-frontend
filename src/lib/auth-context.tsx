@@ -9,6 +9,7 @@ type AuthContextValue = {
   isLoading: boolean;
   setUser: (user: AuthUser | null) => void;
   logout: () => Promise<void>;
+  logoutLocally: () => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -33,8 +34,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }
 
+  // Clears local session state without calling the authenticated
+  // /auth/logout endpoint — needed for account deletion, which revokes all
+  // of the user's tokens server-side as part of the request itself, so
+  // that endpoint would always 401 by the time this runs.
+  function logoutLocally() {
+    clearStoredToken();
+    setUser(null);
+  }
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, setUser, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, setUser, logout, logoutLocally }}>
       {children}
     </AuthContext.Provider>
   );

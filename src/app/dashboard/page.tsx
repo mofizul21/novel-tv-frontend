@@ -19,7 +19,7 @@ const STATUS_LABELS: Record<CurrentSubscription["status"], string> = {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, isLoading, logout } = useAuth();
+  const { user, isLoading, logout, logoutLocally } = useAuth();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [subscription, setSubscription] = useState<CurrentSubscription | null | undefined>(undefined);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -64,7 +64,10 @@ export default function DashboardPage() {
     setDeleteError(null);
     try {
       await requestAccountDeletion();
-      await logout();
+      // requestAccountDeletion() already revokes every token for this user
+      // server-side, so a real logout() call here would always fail with
+      // "Unauthenticated." — clear the local session instead.
+      logoutLocally();
       router.push("/?account_deleted=1");
     } catch (err) {
       setDeleteError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
