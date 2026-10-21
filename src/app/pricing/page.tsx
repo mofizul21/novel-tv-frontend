@@ -10,6 +10,7 @@ import {
   startSubscriptionCheckout,
   type CheckoutGateway,
   type CurrentSubscription,
+  type GatewayAvailability,
   type SubscriptionPlan,
 } from "@/lib/subscriptions";
 import { validateCoupon, type CouponPreview } from "@/lib/coupons";
@@ -29,6 +30,7 @@ export default function PricingPage() {
   const { user } = useAuth();
 
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [gateways, setGateways] = useState<GatewayAvailability>({ stripe: true, paypal: true });
   const [currentSubscription, setCurrentSubscription] = useState<CurrentSubscription | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [checkoutKey, setCheckoutKey] = useState<string | null>(null);
@@ -49,7 +51,10 @@ export default function PricingPage() {
     (async () => {
       try {
         const data = await fetchSubscriptionPlans();
-        if (!cancelled) setPlans(data);
+        if (!cancelled) {
+          setPlans(data.plans);
+          setGateways(data.gateways);
+        }
       } catch {
         if (!cancelled) setPlans([]);
       } finally {
@@ -337,22 +342,30 @@ export default function PricingPage() {
                             ? "Upgrade"
                             : "Downgrade"}
                       </button>
+                    ) : !gateways.stripe && !gateways.paypal ? (
+                      <div className="rounded-md border border-border-light bg-surface-light px-3 py-3 text-center font-body text-sm text-text-secondary">
+                        Subscriptions are temporarily unavailable. Please check back soon.
+                      </div>
                     ) : (
                       <>
-                        <button
-                          onClick={() => handleSubscribe(plan, "stripe")}
-                          disabled={checkoutKey === `${plan.slug}:stripe`}
-                          className="w-full rounded-md bg-primary py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary transition-colors duration-150 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          {checkoutKey === `${plan.slug}:stripe` ? "Loading checkout…" : "Subscribe with Card"}
-                        </button>
-                        <button
-                          onClick={() => handleSubscribe(plan, "paypal")}
-                          disabled={checkoutKey === `${plan.slug}:paypal`}
-                          className="w-full rounded-md border border-border-light bg-surface-light py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary transition-colors duration-150 hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          {checkoutKey === `${plan.slug}:paypal` ? "Redirecting…" : "Subscribe with PayPal"}
-                        </button>
+                        {gateways.stripe && (
+                          <button
+                            onClick={() => handleSubscribe(plan, "stripe")}
+                            disabled={checkoutKey === `${plan.slug}:stripe`}
+                            className="w-full rounded-md bg-primary py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary transition-colors duration-150 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {checkoutKey === `${plan.slug}:stripe` ? "Loading checkout…" : "Subscribe with Card"}
+                          </button>
+                        )}
+                        {gateways.paypal && (
+                          <button
+                            onClick={() => handleSubscribe(plan, "paypal")}
+                            disabled={checkoutKey === `${plan.slug}:paypal`}
+                            className="w-full rounded-md border border-border-light bg-surface-light py-3 font-ui text-sm font-bold uppercase tracking-wide text-text-primary transition-colors duration-150 hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {checkoutKey === `${plan.slug}:paypal` ? "Redirecting…" : "Subscribe with PayPal"}
+                          </button>
+                        )}
                       </>
                     )}
                   </div>

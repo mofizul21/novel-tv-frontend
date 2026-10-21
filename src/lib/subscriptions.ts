@@ -13,9 +13,19 @@ export type SubscriptionPlan = {
   trial_label: string | null;
 };
 
-export async function fetchSubscriptionPlans(): Promise<SubscriptionPlan[]> {
-  const response = await apiFetch<{ data: SubscriptionPlan[] }>("subscription-plans");
-  return response.data;
+export type GatewayAvailability = { stripe: boolean; paypal: boolean };
+
+export type SubscriptionPlansResponse = {
+  plans: SubscriptionPlan[];
+  gateways: GatewayAvailability;
+};
+
+export async function fetchSubscriptionPlans(): Promise<SubscriptionPlansResponse> {
+  const response = await apiFetch<{
+    data: SubscriptionPlan[];
+    meta: { gateways: GatewayAvailability };
+  }>("subscription-plans");
+  return { plans: response.data, gateways: response.meta.gateways };
 }
 
 export type SubscriptionStatus = "trialing" | "active" | "past_due" | "canceled" | "expired";
