@@ -1,6 +1,11 @@
 import Link from "next/link";
 import Image from "next/image";
 import { footerLinks } from "@/lib/demo-data";
+import {
+  DEFAULT_SITE_SETTINGS,
+  resolveFooterText,
+  type SiteSettings,
+} from "@/lib/site-settings";
 
 const socialIcons = {
   Instagram: (
@@ -68,7 +73,9 @@ function FooterColumn({
   );
 }
 
-export function Footer() {
+export function Footer({ siteSettings }: { siteSettings?: SiteSettings }) {
+  const settings = siteSettings ?? DEFAULT_SITE_SETTINGS;
+
   return (
     <footer className="border-t border-border bg-background">
       <div className="mx-auto max-w-360 px-4 py-10 sm:px-6 lg:px-10">
@@ -76,7 +83,7 @@ export function Footer() {
           <div className="col-span-2 sm:col-span-1 lg:col-span-1">
             <Link href="/" className="inline-flex items-center">
               <Image
-                src="/images/novel-tv-logo.png"
+                src={settings.logo_url ?? "/images/novel-tv-logo.png"}
                 alt="Novel TV"
                 width={500}
                 height={228}
@@ -84,8 +91,7 @@ export function Footer() {
               />
             </Link>
             <p className="mt-3 max-w-55 font-body text-sm text-text-secondary">
-              Stream unlimited movies, TV shows, and live channels — anytime,
-              anywhere, no limits.
+              {settings.tagline ?? DEFAULT_SITE_SETTINGS.tagline}
             </p>
           </div>
 
@@ -113,7 +119,7 @@ export function Footer() {
         </div>
 
         <p className="mt-10 text-center font-body text-xs text-text-muted">
-          © {new Date().getFullYear()} Novel TV. All Rights Reserved.
+          {resolveFooterText(settings.footer_text)}
         </p>
       </div>
     </footer>

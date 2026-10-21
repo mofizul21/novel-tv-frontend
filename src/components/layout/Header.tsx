@@ -10,7 +10,7 @@ import { useAuth } from "@/lib/auth-context";
 import { searchCatalog, type SearchResult } from "@/lib/search";
 import { useNotifications } from "@/lib/notifications-context";
 
-export function Header() {
+export function Header({ logoUrl }: { logoUrl?: string | null }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useAuth();
@@ -88,7 +88,7 @@ export function Header() {
       <div className="mx-auto flex max-w-360 items-center gap-6 px-4 py-3 sm:px-6 lg:px-10">
         <Link href="/" className="inline-flex items-center">
           <Image
-            src="/images/novel-tv-logo.png"
+            src={logoUrl ?? "/images/novel-tv-logo.png"}
             alt="Novel TV"
             width={500}
             height={228}

@@ -6,6 +6,7 @@ import { EmailVerificationBanner } from "@/components/layout/EmailVerificationBa
 import { AuthProvider } from "@/lib/auth-context";
 import { FavoritesProvider } from "@/lib/favorites-context";
 import { NotificationsProvider } from "@/lib/notifications-context";
+import { fetchSiteSettings } from "@/lib/site-settings";
 import "./globals.css";
 
 const fontHeading = Bebas_Neue({
@@ -32,18 +33,30 @@ const fontAccent = Permanent_Marker({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "Novel TV — Stream Different. No Limits.",
-  description:
-    "Movies. TV shows. Live TV. Originals. No limits. Just nonstop entertainment.",
-  icons: {
-    icon: "/favicon.png",
-    shortcut: "/favicon.png",
-    apple: "/favicon.png",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await fetchSiteSettings();
+  const favicon = settings.favicon_url ?? "/favicon.png";
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+  return {
+    title: "Novel TV — Stream Different. No Limits.",
+    description:
+      "Movies. TV shows. Live TV. Originals. No limits. Just nonstop entertainment.",
+    icons: {
+      icon: favicon,
+      shortcut: favicon,
+      apple: favicon,
+    },
+    // WordPress-style "discourage search engines" — it's a signal, not an
+    // enforced block, so a determined crawler can still ignore it.
+    robots: settings.discourage_search_engines
+      ? { index: false, follow: false }
+      : undefined,
+  };
+}
+
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const siteSettings = await fetchSiteSettings();
+
   return (
     <html
       lang="en"
@@ -53,10 +66,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <AuthProvider>
           <FavoritesProvider>
             <NotificationsProvider>
-              <Header />
+              <Header logoUrl={siteSettings.logo_url} />
               <EmailVerificationBanner />
               <main className="flex-1">{children}</main>
-              <Footer />
+              <Footer siteSettings={siteSettings} />
             </NotificationsProvider>
           </FavoritesProvider>
         </AuthProvider>
